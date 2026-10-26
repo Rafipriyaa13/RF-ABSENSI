@@ -65,3 +65,44 @@
     window.addEventListener('offline', updateStatus);
     updateStatus();
 })();
+
+// ----- Modal (buka/tutup) -----
+(function () {
+    'use strict';
+
+    let activeModal = null;
+    let lastFocus = null;
+
+    function openModal(modal) {
+        lastFocus = document.activeElement;
+        modal.hidden = false;
+        activeModal = modal;
+        document.body.style.overflow = 'hidden';
+        modal.querySelector('input:not([readonly]), select, textarea')?.focus();
+    }
+
+    function closeModal() {
+        if (!activeModal) return;
+        activeModal.hidden = true;
+        activeModal = null;
+        document.body.style.overflow = '';
+        lastFocus?.focus();
+    }
+
+    // Tombol pembuka: <button data-modal-open="idModal">
+    document.querySelectorAll('[data-modal-open]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+            const modal = document.getElementById(btn.dataset.modalOpen);
+            if (modal) openModal(modal);
+        })
+    );
+
+    // Tombol penutup (X, Batal, area gelap): [data-modal-close]
+    document.querySelectorAll('[data-modal-close]').forEach((el) =>
+        el.addEventListener('click', closeModal)
+    );
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+})();

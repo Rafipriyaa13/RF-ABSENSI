@@ -1,8 +1,10 @@
 <?php
 
-$baseUrl = defined('BASE_URL') ? BASE_URL : ' ';
+$baseUrl = defined('BASE_URL') ? BASE_URL : '';
 $pageTitle    = $pageTitle    ?? 'Dashboard';
 $pageSubtitle = $pageSubtitle ?? '';
+$addButton    = $addButton    ?? '';   
+$addModal     = $addModal     ?? '';   
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -34,6 +36,12 @@ $pageSubtitle = $pageSubtitle ?? '';
             </div>
 
             <div class="topbar-actions">
+                <?php if ($addButton && $addModal): ?>
+                    <button type="button" class="btn btn-dark" data-modal-open="<?= htmlspecialchars($addModal) ?>">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                        <span><?= htmlspecialchars($addButton) ?></span>
+                    </button>
+                <?php endif; ?>
                 <span class="status" id="statusBadge"><i class="dot"></i><span>Online</span></span>
                 <button class="icon-btn" id="refreshBtn" aria-label="Muat ulang">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
@@ -41,4 +49,4 @@ $pageSubtitle = $pageSubtitle ?? '';
             </div>
         </header>
 
-        <main class="content"></main>
+        <main class="content">
