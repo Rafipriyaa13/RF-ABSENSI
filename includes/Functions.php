@@ -16,3 +16,15 @@ function get_flash() {
     unset($_SESSION['flash']);
     return $f;
 }
+function tgl_indo($tanggal) {
+    if (!$tanggal) return '';
+    $bulan = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+    ];
+    $parts = explode('-', $tanggal);
+    if (count($parts) !== 3) return $tanggal;
+    [$tahun, $bln, $tgl] = $parts;
+    return (int)$tgl . ' ' . ($bulan[(int)$bln] ?? '') . ' ' . $tahun;
+}

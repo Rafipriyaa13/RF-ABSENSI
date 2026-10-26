@@ -1,49 +1,108 @@
 <?php
+// manager/pegawai/index.php
+require_once __DIR__ . '/../../includes/Functions.php';
+require_once __DIR__ . '/../../config/database.php';
+// require_once __DIR__ . '/../../includes/Auth.php';
+// cek_role('manager');   // aktifkan setelah login selesai
 
 $pageTitle    = 'Kepegawaian';
 $pageSubtitle = 'Kehadiran, kontrak, dan jadwal shift';
 $activeMenu   = 'kepegawaian';
-$addButton    = 'Tambah Data';
-$addModal     = 'modalTambah';
+$topAction    = ['Tambah Data', '/manager/pegawai/tambah.php'];
 
+// ---------- 1. Statistik ----------
+$total = $pdo->query("SELECT COUNT(*) FROM users WHERE status = 'aktif'")->fetchColumn();
 
-$idBaru = 'KPG-' . date('Y') . '-001';
+$hadir = $pdo->query("
+    SELECT COUNT(*) FROM absensi
+    WHERE check_in >= CURRENT_DATE AND check_in < CURRENT_DATE + 1
+")->fetchColumn();
 
-$jabatanList = ['Store Manager', 'Cashier', 'Kitchen Staff', 'Crew'];
-$outletList  = ['Richeese Factory Ijen',
-    'Richeese Factory Dinoyo',
-    'Richeese Factory Transmart MX',
-    'Richeese Factory Borobudur',
-    'Richeese Factory Sunandar Priyo',];
+$izin = $pdo->query("
+    SELECT COUNT(DISTINCT user_id) FROM izin_cuti
+    WHERE status_approval = 'disetujui'
+      AND CURRENT_DATE BETWEEN tanggal_mulai AND tanggal_selesai
+")->fetchColumn();
 
+// Kontrak berakhir = sudah lewat atau habis dalam 30 hari ke depan
+$kontrak = $pdo->query("
+    SELECT COUNT(*) FROM users
+    WHERE status = 'aktif' AND kontrak_selesai IS NOT NULL
+      AND kontrak_selesai <= CURRENT_DATE + 30
+")->fetchColumn();
 
 $stats = [
-    ['Total Karyawan',   '1,842'],
-    ['Hadir Hari Ini',   '1,750'],
-    ['Izin/Cuti',        '42'],
-    ['Kontrak Berakhir', '15'],
+    ['Total Karyawan',   $total],
+    ['Hadir Hari Ini',   $hadir],
+    ['Izin/Cuti',        $izin],
+    ['Kontrak Berakhir', $kontrak],
 ];
 
-$karyawan = [
-    ['RF-EMP01', 'Andi Saputra', 'Store Manager', 'Richeese Factory Ijen',    'Hadir', '31 Des 2026'],
-    ['RF-EMP02', 'Siti Rahma',   'Cashier',       'Richeese Factory Dinoyo',  'Izin',  '15 Jun 2025'],
-    ['RF-EMP03', 'Budi Pratama', 'Kitchen Staff', 'Richeese Factory Borobudur', 'Hadir', '10 Feb 2025'],
-];
+// ---------- 2. Daftar karyawan + status hari ini ----------
+$karyawan = $pdo->query("
+    SELECT u.kode_pegawai, u.nama, u.jabatan, u.kontrak_selesai,
+        CASE
+            WHEN a.status_kehadiran = 'terlambat'   THEN 'Terlambat'
+            WHEN a.status_kehadiran = 'tepat_waktu' THEN 'Hadir'
+            WHEN EXISTS (
+                SELECT 1 FROM izin_cuti i
+                WHERE i.user_id = u.id
+                  AND i.status_approval = 'disetujui'
+                  AND CURRENT_DATE BETWEEN i.tanggal_mulai AND i.tanggal_selesai
+            )                                       THEN 'Izin'
+            WHEN j.id IS NULL OR j.status = 'libur' THEN 'Libur'
+            ELSE 'Belum Absen'
+        END AS kehadiran
+    FROM users u
+    LEFT JOIN jadwal  j ON j.user_id = u.id AND j.tanggal = CURRENT_DATE
+    LEFT JOIN absensi a ON a.jadwal_id = j.id
+    WHERE u.status = 'aktif'
+    ORDER BY u.kode_pegawai
+")->fetchAll();
 
-$hari  = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
-$shift = [
-    ['06:00 - 14:00', 'Andi, Siti', 'Andi, Budi', 'Siti, Dewi', 'Andi, Dewi', 'Siti, Budi'],
-    ['14:00 - 22:00', 'Budi, Dewi', 'Siti, Dewi', 'Andi, Budi', 'Siti, Budi', 'Andi, Dewi'],
-];
+// ---------- 3. Jadwal shift minggu ini (Senin-Jumat) ----------
+$hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+
+$daftarShift = $pdo->query("SELECT id, jam_mulai, jam_selesai FROM shift ORDER BY jam_mulai")->fetchAll();
+
+$jadwal = $pdo->query("
+    SELECT j.shift_id,
+           EXTRACT(ISODOW FROM j.tanggal)::int AS hari,
+           STRING_AGG(split_part(u.nama, ' ', 1), ', ' ORDER BY u.nama) AS nama
+    FROM jadwal j
+    JOIN users u ON u.id = j.user_id
+    WHERE j.status = 'terjadwal'
+      AND j.tanggal BETWEEN date_trunc('week', CURRENT_DATE)::date
+                        AND date_trunc('week', CURRENT_DATE)::date + 4
+    GROUP BY j.shift_id, hari
+")->fetchAll();
+
+$peta = [];
+foreach ($jadwal as $r) {
+    $peta[$r['shift_id']][$r['hari']] = $r['nama'];
+}
+
+$shift = [];
+foreach ($daftarShift as $s) {
+    $baris = [substr($s['jam_mulai'], 0, 5) . ' - ' . substr($s['jam_selesai'], 0, 5)];
+    for ($h = 1; $h <= 5; $h++) {
+        $baris[] = $peta[$s['id']][$h] ?? '-';
+    }
+    $shift[] = $baris;
+}
 
 include __DIR__ . '/../../includes/Header.php';
 ?>
 
+<?php if ($flash = get_flash()): ?>
+    <div class="alert alert-<?= e($flash['tipe']) ?>"><?= e($flash['pesan']) ?></div>
+<?php endif; ?>
+
 <section class="stats">
-    <?php foreach ($stats as [$label, $value]): ?>
+    <?php foreach ($stats as [$label, $nilai]): ?>
         <article class="card stat">
-            <span class="stat-label"><?= $label ?></span>
-            <p class="stat-value"><?= $value ?> <small>Orang</small></p>
+            <span class="stat-label"><?= e($label) ?></span>
+            <p class="stat-value"><?= number_format((int) $nilai) ?> <small>Orang</small></p>
         </article>
     <?php endforeach; ?>
 </section>
@@ -51,21 +110,27 @@ include __DIR__ . '/../../includes/Header.php';
 <section class="card panel">
     <h2>Daftar Karyawan</h2>
     <div class="table-wrap">
-        <table class="table">
+        <table class="table cards">
             <thead>
-                <tr><th>ID</th><th>Nama</th><th>Jabatan</th><th>Outlet</th><th>Kehadiran</th><th>Kontrak</th></tr>
+                <tr><th>ID</th><th>Nama</th><th>Jabatan</th><th>Kehadiran</th><th>Kontrak</th></tr>
             </thead>
             <tbody>
-                <?php foreach ($karyawan as [$id, $nama, $jabatan, $outlet, $hadir, $kontrak]): ?>
+                <?php foreach ($karyawan as $k):
+                    $hampirHabis = $k['kontrak_selesai'] && strtotime($k['kontrak_selesai']) <= strtotime('+30 days');
+                ?>
                     <tr>
-                        <td class="strong"><?= htmlspecialchars($id) ?></td>
-                        <td><?= htmlspecialchars($nama) ?></td>
-                        <td><?= htmlspecialchars($jabatan) ?></td>
-                        <td><?= htmlspecialchars($outlet) ?></td>
-                        <td><span class="badge <?= strtolower($hadir) ?>"><?= htmlspecialchars($hadir) ?></span></td>
-                        <td><?= htmlspecialchars($kontrak) ?></td>
+                        <td data-label="ID" class="strong"><?= e($k['kode_pegawai'] ?? '-') ?></td>
+                        <td data-label="Nama"><?= e($k['nama']) ?></td>
+                        <td data-label="Jabatan"><?= e($k['jabatan'] ?? '-') ?></td>
+                        <td data-label="Kehadiran">
+                            <span class="badge <?= str_replace(' ', '-', strtolower($k['kehadiran'])) ?>"><?= e($k['kehadiran']) ?></span>
+                        </td>
+                        <td data-label="Kontrak" class="<?= $hampirHabis ? 'warn' : '' ?>"><?= e(tgl_indo($k['kontrak_selesai'])) ?></td>
                     </tr>
                 <?php endforeach; ?>
+                <?php if (!$karyawan): ?>
+                    <tr><td colspan="5" class="empty">Belum ada pegawai. Klik Tambah Data untuk mulai.</td></tr>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
@@ -74,89 +139,27 @@ include __DIR__ . '/../../includes/Header.php';
 <section class="card panel">
     <h2>Jadwal Shift</h2>
     <div class="table-wrap">
-        <table class="table">
+        <table class="table shift">
             <thead>
-                <tr><th>Jam Shift</th><?php foreach ($hari as $h): ?><th><?= $h ?></th><?php endforeach; ?></tr>
+                <tr>
+                    <th>Jam Shift</th>
+                    <?php foreach ($hari as $h): ?><th><?= $h ?></th><?php endforeach; ?>
+                </tr>
             </thead>
             <tbody>
                 <?php foreach ($shift as $row): ?>
                     <tr>
                         <?php foreach ($row as $i => $cell): ?>
-                            <td class="<?= $i === 0 ? 'strong' : '' ?>"><?= htmlspecialchars($cell) ?></td>
+                            <td class="<?= $i === 0 ? 'strong' : '' ?>"><?= e($cell) ?></td>
                         <?php endforeach; ?>
                     </tr>
                 <?php endforeach; ?>
+                <?php if (!$shift): ?>
+                    <tr><td colspan="6" class="empty">Belum ada data shift.</td></tr>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
 </section>
-
-<!-- Modal Tambah Data -->
-<div class="modal" id="modalTambah" role="dialog" aria-modal="true" aria-labelledby="modalTambahTitle" hidden>
-    <div class="modal-backdrop" data-modal-close></div>
-    <div class="modal-dialog">
-        <form action="tambah.php" method="post" class="modal-form">
-            <header class="modal-header">
-                <h2 id="modalTambahTitle">Tambah Data Kepegawaian</h2>
-                <button type="button" class="icon-btn borderless" data-modal-close aria-label="Tutup">&times;</button>
-            </header>
-
-            <div class="modal-body">
-                <fieldset>
-                    <legend>Identitas Kepegawaian</legend>
-                    <p class="hint">Informasi dasar untuk registrasi kepegawaian.</p>
-                    <div class="form-grid">
-                        <div class="field">
-                            <label for="id_karyawan">ID Karyawan</label>
-                            <input type="text" id="id_karyawan" name="id_karyawan" value="<?= htmlspecialchars($idBaru) ?>" readonly>
-                        </div>
-                        <div class="field">
-                            <label for="nip">NIP</label>
-                            <input type="text" id="nip" name="nip" placeholder="Masukkan NIP" required>
-                        </div>
-                        <div class="field full">
-                            <label for="nama">Nama Lengkap</label>
-                            <input type="text" id="nama" name="nama" placeholder="Cth: Ahmad Rizky" required>
-                        </div>
-                    </div>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Penugasan &amp; Kontrak</legend>
-                    <p class="hint">Detail jabatan, outlet, dan masa kontrak.</p>
-                    <div class="form-grid">
-                        <div class="field">
-                            <label for="jabatan">Jabatan</label>
-                            <select id="jabatan" name="jabatan" required>
-                                <option value="">Pilih Jabatan...</option>
-                                <?php foreach ($jabatanList as $j): ?>
-                                    <option value="<?= htmlspecialchars($j) ?>"><?= htmlspecialchars($j) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label for="outlet">Outlet Penugasan</label>
-                            <select id="outlet" name="outlet" required>
-                                <option value="">Pilih Outlet...</option>
-                                <?php foreach ($outletList as $o): ?>
-                                    <option value="<?= htmlspecialchars($o) ?>"><?= htmlspecialchars($o) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="field full">
-                            <label for="kontrak_berakhir">Tanggal Berakhir Kontrak</label>
-                            <input type="date" id="kontrak_berakhir" name="kontrak_berakhir" required>
-                        </div>
-                    </div>
-                </fieldset>
-            </div>
-
-            <footer class="modal-footer">
-                <button type="button" class="btn btn-light" data-modal-close>Batal</button>
-                <button type="submit" class="btn btn-red">Simpan Data</button>
-            </footer>
-        </form>
-    </div>
-</div>
 
 <?php include __DIR__ . '/../../includes/Footer.php'; ?>

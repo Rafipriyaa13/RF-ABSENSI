@@ -9,13 +9,21 @@ DROP TABLE IF EXISTS users     CASCADE;
 
 -- 1. USERS
 CREATE TABLE users (
-    id            SERIAL PRIMARY KEY,
-    nama          VARCHAR(100) NOT NULL,
-    email         VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    role          VARCHAR(10)  NOT NULL CHECK (role IN ('manager', 'pegawai')),
-    status        VARCHAR(10)  NOT NULL DEFAULT 'aktif'
-                  CHECK (status IN ('aktif', 'nonaktif'))
+    id              SERIAL PRIMARY KEY,
+    kode_pegawai    VARCHAR(20) UNIQUE,              -- RF-EMP01
+    nama            VARCHAR(100) NOT NULL,
+    email           VARCHAR(100) NOT NULL UNIQUE,
+    password_hash   VARCHAR(255),                    -- NULL = belum registrasi
+    role            VARCHAR(10)  NOT NULL CHECK (role IN ('manager', 'pegawai')),
+    jabatan         VARCHAR(50),                     -- Store Manager, Cashier, Kitchen Staff
+    kontrak_mulai   DATE,
+    kontrak_selesai DATE,
+    rfid_uid        VARCHAR(30) UNIQUE,              -- NULL = kartu belum didaftarkan
+    status          VARCHAR(10)  NOT NULL DEFAULT 'aktif'
+                    CHECK (status IN ('aktif', 'nonaktif')),
+    CONSTRAINT chk_kontrak
+        CHECK (kontrak_mulai IS NULL OR kontrak_selesai IS NULL
+               OR kontrak_selesai >= kontrak_mulai)
 );
 
 -- 2. SHIFT (master data)
