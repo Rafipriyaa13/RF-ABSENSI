@@ -227,8 +227,12 @@ h1, h2, p {
 
 .content {
     padding: 24px;
-    display: grid;
-    gap: 20px
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    min-width: 0; /* Mencegah elemen anak memaksakan kelebaran */
+    box-sizing: border-box;
 }
 
 body.nav-collapsed .sidebar {
