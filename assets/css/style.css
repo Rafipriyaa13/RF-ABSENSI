@@ -206,7 +206,32 @@ h1, h2, p {
     cursor: pointer;
     white-space: nowrap
 }
-
+.btn-edit{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #F5A327;
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.btn-delete{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #dc2626;
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
 .online {
     border: 1px solid var(--line);
     border-radius: 8px;

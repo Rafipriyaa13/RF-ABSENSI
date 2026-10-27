@@ -40,7 +40,7 @@ $stats = [
 
 // ---------- 2. Daftar karyawan + status hari ini ----------
 $karyawan = $pdo->query("
-    SELECT u.kode_pegawai, u.nama, u.jabatan, u.kontrak_selesai,
+    SELECT u.id,u.kode_pegawai, u.nama, u.jabatan, u.kontrak_selesai,
         CASE
             WHEN a.status_kehadiran = 'terlambat'   THEN 'Terlambat'
             WHEN a.status_kehadiran = 'tepat_waktu' THEN 'Hadir'
@@ -112,7 +112,7 @@ include __DIR__ . '/../../includes/Header.php';
     <div class="table-wrap">
         <table class="table cards">
             <thead>
-                <tr><th>ID</th><th>Nama</th><th>Jabatan</th><th>Kehadiran</th><th>Kontrak</th></tr>
+                <tr><th>ID</th><th>Nama</th><th>Jabatan</th><th>Kehadiran</th><th>Kontrak</th><th>Action</th></tr>
             </thead>
             <tbody>
                 <?php foreach ($karyawan as $k):
@@ -126,6 +126,10 @@ include __DIR__ . '/../../includes/Header.php';
                             <span class="badge <?= str_replace(' ', '-', strtolower($k['kehadiran'])) ?>"><?= e($k['kehadiran']) ?></span>
                         </td>
                         <td data-label="Kontrak" class="<?= $hampirHabis ? 'warn' : '' ?>"><?= e(tgl_indo($k['kontrak_selesai'])) ?></td>
+                        <td>
+                            <a href="/manager/pegawai/edit.php?id=<?= e($k['id']) ?>" class="btn-edit">Edit</a>
+                            <a href="/manager/pegawai/hapus.php?id=<?= e($k['id']) ?>" class="btn-delete" onclick="return confirm('Apakah Anda yakin ingin menghapus pegawai ini?')">Hapus</a>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (!$karyawan): ?>
