@@ -66,43 +66,47 @@
     updateStatus();
 })();
 
-// ----- Modal (buka/tutup) -----
 (function () {
-    'use strict';
-
-    let activeModal = null;
-    let lastFocus = null;
-
-    function openModal(modal) {
-        lastFocus = document.activeElement;
-        modal.hidden = false;
-        activeModal = modal;
-        document.body.style.overflow = 'hidden';
-        modal.querySelector('input:not([readonly]), select, textarea')?.focus();
+    // --- Isi cepat durasi kontrak ---
+    var mulai = document.getElementById('kontrak_mulai');
+    var selesai = document.getElementById('kontrak_selesai');
+    function fmt(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
-
-    function closeModal() {
-        if (!activeModal) return;
-        activeModal.hidden = true;
-        activeModal = null;
-        document.body.style.overflow = '';
-        lastFocus?.focus();
-    }
-
-    // Tombol pembuka: <button data-modal-open="idModal">
-    document.querySelectorAll('[data-modal-open]').forEach((btn) =>
-        btn.addEventListener('click', () => {
-            const modal = document.getElementById(btn.dataset.modalOpen);
-            if (modal) openModal(modal);
-        })
-    );
-
-    // Tombol penutup (X, Batal, area gelap): [data-modal-close]
-    document.querySelectorAll('[data-modal-close]').forEach((el) =>
-        el.addEventListener('click', closeModal)
-    );
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModal();
+    document.querySelectorAll('[data-bulan]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var awal = mulai.value ? new Date(mulai.value + 'T00:00:00') : new Date();
+            if (!mulai.value) mulai.value = fmt(awal);
+            var akhir = new Date(awal.getFullYear(), awal.getMonth() + parseInt(btn.dataset.bulan, 10), awal.getDate());
+            selesai.value = fmt(akhir);
+        });
     });
+
+    // --- Kolom RFID: reader USB mengetik UID lalu menekan Enter ---
+    var rfid = document.getElementById('rfid_uid');
+    var wrap = document.getElementById('rfid-wrap');
+    var state = document.getElementById('rfid-state');
+    function tampil() {
+        wrap.classList.toggle('filled', rfid.value !== '');
+        if (rfid.value !== '' && document.activeElement !== rfid) state.textContent = 'Kartu terbaca.';
+    }
+    rfid.addEventListener('focus', function () {
+        wrap.classList.add('ready');
+        state.textContent = 'Siap membaca. Tempelkan kartu pada reader.';
+    });
+    rfid.addEventListener('blur', function () {
+        wrap.classList.remove('ready');
+        state.textContent = rfid.value ? 'Kartu terbaca.' : 'Klik kolom untuk mulai membaca kartu.';
+        tampil();
+    });
+    rfid.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {          // Enter dari reader jangan mengirim form
+            e.preventDefault();
+            rfid.value = rfid.value.trim().toUpperCase();
+            state.textContent = 'Kartu terbaca: ' + rfid.value;
+            tampil();
+        }
+    });
+    rfid.addEventListener('input', tampil);
+    tampil();
 })();
