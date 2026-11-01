@@ -842,3 +842,193 @@ body.nav-collapsed .main {
         margin: 16px 16px 0
     }
 }
+
+/* ---------- Jadwal shift (manager/jadwal/index.php) ---------- */
+.s-pagi  { --c: #f59e0b; --bg: #fef3c7; --bd: #fde68a; --fg: #92400e }
+.s-siang { --c: #3b82f6; --bg: #dbeafe; --bd: #bfdbfe; --fg: #1e40af }
+.s-malam { --c: #6366f1; --bg: #e0e7ff; --bd: #c7d2fe; --fg: #3730a3 }
+.s-libur { --c: #9ca3af; --bg: #f3f4f6; --bd: #e5e7eb; --fg: #6b7280 }
+
+.btn-sm { padding: 6px 12px; font-size: 13px }
+
+.jd-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 16px 20px
+}
+
+.jd-head h2 { font-size: 15px; padding: 0 }
+
+/* Konfigurasi shift */
+.shift-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
+    padding: 0 20px 14px
+}
+
+.shift-item {
+    background: var(--head);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--c, #9ca3af);
+    border-radius: 10px;
+    padding: 12px 14px
+}
+
+.shift-item .top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-weight: 600
+}
+
+.shift-item .top span {
+    font-weight: 500;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums
+}
+
+.shift-item p { margin-top: 3px; font-size: 12.5px; color: var(--muted) }
+
+.jd-legend { padding: 0 20px 16px; font-size: 12px; color: var(--muted); line-height: 1.5 }
+
+/* Toolbar minggu */
+.jd-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px 16px
+}
+
+.jd-week, .jd-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+
+.jd-week strong { font-size: 14px; padding: 0 4px }
+
+.jd-week .icon-btn { display: inline-grid; place-items: center }
+
+.jd-dirty { font-size: 12px; color: #b45309 }
+
+.jd-msg { padding: 0 20px 12px; font-size: 12.5px; color: #166534; min-height: 0 }
+.jd-msg:empty { display: none }
+
+/* Tabel jadwal */
+.jd-wrap { overflow-x: auto; border-top: 1px solid var(--line) }
+
+.jd-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 900px }
+
+.jd-table th {
+    background: var(--head);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 6px;
+    text-align: center;
+    white-space: nowrap
+}
+
+.jd-table th small { display: block; font-size: 11px; font-weight: 400; color: var(--muted) }
+
+.jd-table th.today { color: var(--red) }
+.jd-table th.today small { color: var(--red); font-weight: 600 }
+
+.jd-table .left { text-align: left; padding-left: 20px }
+
+.jd-table td { padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: middle }
+
+.jd-table tr.grp td { border-top-color: #d1d5db }
+
+.jd-table .nm { font-weight: 600; white-space: nowrap }
+
+.pos-sub { display: none; font-size: 11.5px; color: var(--muted) }
+
+.cell {
+    appearance: none;
+    width: 100%;
+    min-width: 86px;
+    height: 34px;
+    padding: 0 20px;
+    font: inherit;
+    font-size: 12.5px;
+    text-align: center;
+    text-align-last: center;
+    cursor: pointer;
+    color: var(--fg, var(--ink));
+    background-color: var(--bg, #fff);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%239ca3af' stroke-width='1.8'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 7px center;
+    border: 1px solid var(--bd, #d1d5db);
+    border-radius: 6px;
+    transition: box-shadow .15s, border-color .15s
+}
+
+.cell:hover { border-color: #9ca3af }
+.cell:focus { outline: 0; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(232, 24, 44, .16) }
+.cell.changed { box-shadow: 0 0 0 2px rgba(232, 24, 44, .35) }
+
+.lock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 34px;
+    min-width: 86px;
+    border: 1px dashed #d1d5db;
+    border-radius: 6px;
+    background: var(--head);
+    color: var(--muted);
+    font-size: 12.5px
+}
+
+/* Ringkasan per hari */
+.jd-table tfoot td {
+    background: #fafafa;
+    border-top: 2px solid var(--line);
+    padding: 10px 6px;
+    vertical-align: top
+}
+
+.jd-table tfoot .left { font-weight: 600; font-size: 13px }
+
+.sum { display: grid; gap: 3px; font-size: 12px }
+
+.sum div { display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--muted) }
+
+.sum i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, #9ca3af) }
+
+.sum b { color: var(--ink); font-variant-numeric: tabular-nums }
+
+.sum .zero b { color: #9ca3af; font-weight: 400 }
+
+/* Dialog tambah shift */
+.dlg {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0;
+    width: min(420px, calc(100vw - 32px));
+    color: var(--ink)
+}
+
+.dlg::backdrop { background: rgba(17, 24, 39, .45) }
+.dlg h2 { font-size: 16px; padding: 18px 20px 0 }
+.dlg-body { padding: 16px 20px; display: grid; gap: 14px }
+.dlg .form-actions { padding: 14px 20px }
+
+@media (max-width:640px) {
+    .jd-head, .jd-toolbar { padding-left: 14px; padding-right: 14px }
+    .shift-list, .jd-legend { padding-left: 14px; padding-right: 14px }
+    .jd-msg { padding-left: 14px; padding-right: 14px }
+    .jd-actions { width: 100% }
+    .jd-actions .btn { flex: 1; justify-content: center }
+    .col-pos { display: none }
+    .pos-sub { display: block }
+    .jd-table .left { padding-left: 14px }
+    .jd-table .sticky { position: sticky; left: 0; z-index: 1; background: var(--card); box-shadow: 1px 0 0 var(--line) }
+    .jd-table th.sticky, .jd-table tfoot .sticky { background: var(--head) }
+}
+
+.shift-item .act { margin-top: 10px }
