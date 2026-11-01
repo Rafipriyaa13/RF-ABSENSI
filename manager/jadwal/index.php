@@ -127,7 +127,8 @@ include __DIR__ . '/../../includes/Header.php'; ?>
             <article class="shift-item s-<?= e($s['kode']) ?>">
                 <div class="top"><b><?= e('Shift ' . $s['nama']) ?></b><span><?= e($s['mulai']) ?> - <?= e($s['selesai']) ?></span></div>
                 <?php if ($s['ket'] !== ''): ?><p><?= e($s['ket']) ?></p><?php endif; ?>
-                <div class="act"><a class="btn-edit btn-sm" href="edit.php?kode=<?= urlencode($s['kode']) ?>">Edit</a></div>
+                <div class="act"><a class="btn-edit btn-sm" href="edit.php?kode=<?= urlencode($s['kode']) ?>">Edit</a>
+                    <a class="btn-delete btn-sm" href="hapus.php?kode=<?= urlencode($s['kode']) ?>">Hapus</a></div>
             </article>
         <?php endforeach; ?>
     </div>

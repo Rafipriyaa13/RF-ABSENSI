@@ -80,6 +80,7 @@ include __DIR__ . '/../../includes/Header.php'; ?>
         </section>
 
         <div class="form-actions">
+            <a class="btn-delete" href="hapus.php?kode=<?= urlencode($kode) ?>" style="margin-right:auto">Hapus</a>
             <a class="btn-ghost" href="index.php">Batal</a>
             <button type="submit" class="btn">Simpan Perubahan</button>
         </div>

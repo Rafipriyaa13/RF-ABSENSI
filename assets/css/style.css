@@ -1031,4 +1031,4 @@ body.nav-collapsed .main {
     .jd-table th.sticky, .jd-table tfoot .sticky { background: var(--head) }
 }
 
-.shift-item .act { margin-top: 10px }
+.shift-item .act { margin-top: 10px; display: flex; gap: 8px }
