@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../../includes/Functions.php';
 require_once __DIR__ . '/../../config/database.php';
+// require_once __DIR__ . '/../../includes/Auth.php';
+// cek_role('manager');   // aktifkan setelah login selesai
 
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 if (!$id) {
