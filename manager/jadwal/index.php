@@ -226,7 +226,9 @@ include __DIR__ . '/../../includes/Header.php'; ?>
                     <tr>
                         <td class="left col-pos"></td>
                         <td class="left sticky">Ringkasan</td>
-                        <?php for ($i = 0; $i < 7; $i++): ?>
+                        
+                        <!-- Masih belum bisa dipakai -->
+                        <!-- <?php for ($i = 0; $i < 7; $i++): ?>
                             <td>
                                 <div class="sum">
                                     <?php foreach ($shift as $s):
@@ -235,7 +237,7 @@ include __DIR__ . '/../../includes/Header.php'; ?>
                                     <?php endforeach; ?>
                                 </div>
                             </td>
-                        <?php endfor; ?>
+                        <?php endfor; ?> -->
                     </tr>
                 </tfoot>
             </table>
