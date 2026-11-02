@@ -64,11 +64,18 @@ $pegawai = [   // DUMMY
     ['id' => 4, 'nama' => 'Rian Hidayat', 'posisi' => 'Crew'],
 ];
 
-$shift = [     // DUMMY
-    ['kode' => 'pagi',  'nama' => 'Pagi',  'mulai' => '07:00', 'selesai' => '15:00', 'ket' => 'Shift operasional dapur & kasir pagi'],
-    ['kode' => 'siang', 'nama' => 'Siang', 'mulai' => '15:00', 'selesai' => '23:00', 'ket' => 'Shift operasional sore hingga tutup'],
-    ['kode' => 'malam', 'nama' => 'Malam', 'mulai' => '23:00', 'selesai' => '07:00', 'ket' => 'Shift cleaning & preparation besok'],
+$shift = 
+    $pdo->query("
+    SELECT id as id, nama_shift as nama, jam_mulai as mulai, jam_selesai as selesai
+    FROM shift;
+")->fetchAll();
+
+$KETERANGAN_SHIFT = [
+    'pagi'  => 'Shift operasional pegawai outlet pagi',
+    'sore' => 'Shift operasional pegawai outlet sore',
+    'malam' => 'Shift operasional pegawai outlet malam',
 ];
+
 
 $cuti = [      // DUMMY (Dewi cuti Jum-Sab minggu 26 Okt 2026)
     2 => ['2026-10-30' => true, '2026-10-31' => true],
@@ -124,11 +131,11 @@ include __DIR__ . '/../../includes/Header.php'; ?>
     </div>
     <div class="shift-list">
         <?php foreach ($shift as $s): ?>
-            <article class="shift-item s-<?= e($s['kode']) ?>">
+            <article class="shift-item s-<?= e($s['id']) ?>">
                 <div class="top"><b><?= e('Shift ' . $s['nama']) ?></b><span><?= e($s['mulai']) ?> - <?= e($s['selesai']) ?></span></div>
-                <?php if ($s['ket'] !== ''): ?><p><?= e($s['ket']) ?></p><?php endif; ?>
-                <div class="act"><a class="btn-edit btn-sm" href="edit.php?kode=<?= urlencode($s['kode']) ?>">Edit</a>
-                    <a class="btn-delete btn-sm" href="hapus.php?kode=<?= urlencode($s['kode']) ?>">Hapus</a></div>
+                <p><?= $ket = $KETERANGAN_SHIFT[strtolower($s['nama'])] ?? ''; ?></p>
+                <div class="act"><a class="btn-edit btn-sm" href="edit.php?id=<?= urlencode($s['id']) ?>">Edit</a>
+                    <a class="btn-delete btn-sm" href="hapus.php?id=<?= urlencode($s['id']) ?>">Hapus</a></div>
             </article>
         <?php endforeach; ?>
     </div>
