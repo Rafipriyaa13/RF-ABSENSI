@@ -5,6 +5,9 @@ require_once __DIR__ . '/../../config/database.php';
 // require_once __DIR__ . '/../../includes/Auth.php';
 // cek_role('manager');   // aktifkan setelah login selesai
 
+$pageTitle    = 'Tambah Shift';
+$pageSubtitle = 'Buat konfigurasi shift kerja baru';
+$activeMenu   = 'jadwal';
 /* =====================================================================
  * KONTRAK DATA (untuk backend)
  * FORM (POST ke halaman ini): nama, ket, mulai (HH:MM), selesai (HH:MM)
@@ -14,12 +17,48 @@ require_once __DIR__ . '/../../config/database.php';
  *
  * Setelah sukses simpan: set_flash('sukses', '...'); header('Location: index.php'); exit;
  * ===================================================================== */
-$errors = [];
-$old    = ['nama' => '', 'ket' => '', 'mulai' => '', 'selesai' => ''];
 
-$pageTitle    = 'Tambah Shift';
-$pageSubtitle = 'Buat konfigurasi shift kerja baru';
-$activeMenu   = 'jadwal';
+
+$errors = [];
+$old    = ['nama' => '', 'mulai' => '', 'selesai' => ''];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    foreach ($old as $k => $_) {
+        $old[$k] = trim($_POST[$k] ?? $old[$k]);
+    }
+
+    if (!$errors) {
+        $stmt = $pdo->prepare("
+            INSERT INTO shift (nama_shift, jam_mulai, jam_selesai)
+            VALUES (?, ?, ?)
+        ");
+
+        $sukses = false;
+        for ($i = 0; $i < 3 && !$sukses; $i++) {      // ulangi bila kode bentrok dengan input bersamaan
+            try {
+                $stmt->execute([
+                    $old['nama'], 
+                    $old['mulai'], 
+                    $old['selesai']
+                ]);
+                $sukses = true;
+            } catch (PDOException $ex) {
+                if ($ex->getCode() !== '23505') {
+                    $errors[] = 'Terjadi kesalahan saat menyimpan data.';
+                    break;
+                }
+                break;
+            }
+        }
+
+        if ($sukses) {
+            set_flash('sukses', 'Shift baru berhasil ditambahkan.' . $old['nama'] . '.');
+            header('Location: /manager/jadwal/index.php');
+            exit;
+        }
+    }
+}
+
+
 // Bagian backend AKHIR ======================
 //============================================
 
@@ -43,10 +82,6 @@ include __DIR__ . '/../../includes/Header.php'; ?>
                 <div class="field">
                     <label for="nama">Nama Shift</label>
                     <input type="text" id="nama" name="nama" maxlength="20" placeholder="Cth: Sore" value="<?= e($old['nama']) ?>" required autofocus>
-                </div>
-                <div class="field">
-                    <label for="ket">Keterangan <span>(opsional)</span></label>
-                    <input type="text" id="ket" name="ket" maxlength="80" placeholder="Cth: Shift operasional sore" value="<?= e($old['ket']) ?>">
                 </div>
             </div>
         </section>
