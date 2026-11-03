@@ -44,8 +44,8 @@ function rentang_minggu(DateTimeImmutable $a): string
  * hasil query database. Struktur/nama kunci jangan diubah.
  *
  *  $senin    DateTimeImmutable  Senin awal minggu yang ditampilkan (dari ?minggu=Y-m-d)
- *  $pegawai  [ ['id'=>int, 'nama'=>str, 'posisi'=>str], ... ]   urut per posisi
- *  $shift    [ ['kode'=>str, 'nama'=>str, 'mulai'=>'HH:MM', 'selesai'=>'HH:MM', 'ket'=>str], ... ]
+ *  $karyawan  [ ['id'=>int, 'nama'=>str, 'jabatan'=>str], ... ]   urut per posisi
+ *  $shift    [ ['id'=>str, 'nama'=>str, 'mulai'=>'HH:MM', 'selesai'=>'HH:MM', 'ket'=>str], ... ]
  *  $cuti     [ id_pegawai => ['Y-m-d' => true, ...] ]           cuti disetujui (sel terkunci)
  *  $jadwal   [ id_pegawai => [0..6 => kode_shift | 'libur'] ]   0 = Senin ... 6 = Minggu
  *  $prev     sama seperti $jadwal, untuk minggu sebelumnya (tombol "Salin dari minggu lalu")
@@ -57,12 +57,13 @@ function rentang_minggu(DateTimeImmutable $a): string
  * ===================================================================== */
 $senin = senin_dari($_GET['minggu'] ?? null);
 
-$pegawai = [   // DUMMY
-    ['id' => 1, 'nama' => 'Siti Rahma',   'posisi' => 'Kasir'],
-    ['id' => 2, 'nama' => 'Dewi Lestari', 'posisi' => 'Kasir'],
-    ['id' => 3, 'nama' => 'Budi Santoso', 'posisi' => 'Dapur'],
-    ['id' => 4, 'nama' => 'Rian Hidayat', 'posisi' => 'Crew'],
-];
+$karyawan = $pdo->query("
+    SELECT u.id, u.kode_pegawai, u.nama, u.jabatan,
+           COALESCE(NULLIF(TRIM(u.jabatan), ''), 'Belum Ditentukan') AS jabatan_grup
+    FROM users u
+    WHERE u.status = 'aktif'
+    ORDER BY jabatan_grup, u.nama;
+")->fetchAll();
 
 $shift = 
     $pdo->query("
@@ -92,14 +93,14 @@ $prev = $jadwal;   // DUMMY
 $flash = get_flash();
 
 /* ---- Turunan untuk tampilan (tidak perlu diubah) ---- */
-$kodeShift = array_column($shift, 'kode');
+$kodeShift = array_column($shift, 'id');
 $kodeValid = array_merge($kodeShift, ['libur']);
 $hariIni   = date('Y-m-d');
 $mingguIni = senin_dari(null)->format('Y-m-d');
 
 // Ringkasan awal: jumlah orang per shift per hari
 $ring = [];
-foreach ($pegawai as $p) {
+foreach ($karyawan as $p) {
     for ($i = 0; $i < 7; $i++) {
         $v   = $jadwal[$p['id']][$i] ?? '';
         $tgl = $senin->modify("+$i days")->format('Y-m-d');
@@ -184,14 +185,14 @@ include __DIR__ . '/../../includes/Header.php'; ?>
                 </thead>
                 <tbody>
                     <?php $posisiSebelumnya = null;
-                    foreach ($pegawai as $p):
-                        $awalGrup = $p['posisi'] !== $posisiSebelumnya;
-                        $posisiSebelumnya = $p['posisi']; ?>
+                    foreach ($karyawan as $p):
+                        $awalGrup = $p['jabatan_grup'] !== $posisiSebelumnya;
+                        $posisiSebelumnya = $p['jabatan_grup']; ?>
                         <tr class="<?= $awalGrup ? 'grp' : '' ?>">
-                            <td class="left col-pos"><?= $awalGrup ? e($p['posisi']) : '' ?></td>
+                            <td class="left col-pos"><?= $awalGrup ? e($p['jabatan_grup']) : '' ?></td>
                             <td class="left sticky">
                                 <span class="nm"><?= e($p['nama']) ?></span>
-                                <small class="pos-sub"><?= e($p['posisi']) ?></small>
+                                <small class="pos-sub"><?= e($p['jabatan_grup']) ?></small>
                             </td>
                             <?php for ($i = 0; $i < 7; $i++):
                                 $tgl = $senin->modify("+$i days")->format('Y-m-d');
@@ -212,7 +213,7 @@ include __DIR__ . '/../../includes/Header.php'; ?>
                                                 aria-label="Shift <?= e($p['nama']) ?>, <?= HARI[$i] ?>">
                                             <option value="">—</option>
                                             <?php foreach ($shift as $s): ?>
-                                                <option value="<?= e($s['kode']) ?>" <?= $val === $s['kode'] ? 'selected' : '' ?>><?= e($s['nama']) ?></option>
+                                                <option value="<?= e($s['id']) ?>" <?= $val === $s['id'] ? 'selected' : '' ?>><?= e($s['nama']) ?></option>
                                             <?php endforeach; ?>
                                             <option value="libur" <?= $val === 'libur' ? 'selected' : '' ?>>Libur</option>
                                         </select>
@@ -227,17 +228,16 @@ include __DIR__ . '/../../includes/Header.php'; ?>
                         <td class="left col-pos"></td>
                         <td class="left sticky">Ringkasan</td>
                         
-                        <!-- Masih belum bisa dipakai -->
-                        <!-- <?php for ($i = 0; $i < 7; $i++): ?>
+                        <?php for ($i = 0; $i < 7; $i++): ?>
                             <td>
                                 <div class="sum">
                                     <?php foreach ($shift as $s):
-                                        $n = $ring[$i][$s['kode']] ?? 0; ?>
-                                        <div class="s-<?= e($s['kode']) ?><?= $n === 0 ? ' zero' : '' ?>"><i></i><?= e($s['nama']) ?> <b data-sum="<?= $i ?>|<?= e($s['kode']) ?>"><?= $n ?></b></div>
+                                        $n = $ring[$i][$s['id']] ?? 0; ?>
+                                        <div class="s-<?= e($s['id']) ?><?= $n === 0 ? ' zero' : '' ?>"><i></i><?= e($s['nama']) ?> <b data-sum="<?= $i ?>|<?= e($s['id']) ?>"><?= $n ?></b></div>
                                     <?php endforeach; ?>
                                 </div>
                             </td>
-                        <?php endfor; ?> -->
+                        <?php endfor; ?>
                     </tr>
                 </tfoot>
             </table>
