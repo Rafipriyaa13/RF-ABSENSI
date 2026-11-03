@@ -78,12 +78,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors[] = 'Nama shift "' . $old['nama'] . '" sudah dipakai, gunakan nama lain.';
             } else {
                 $errors[] = 'Terjadi kesalahan saat menyimpan data.';
+                error_log('tambah shift gagal: ' . $ex->getMessage());
             }
         }
 
         if ($sukses) {
             set_flash('sukses', 'Shift "' . $old['nama'] . '" berhasil ditambahkan.');
-            header('Location: /manager/jadwal/index.php');
+            header('Location: index.php');
             exit;
         }
     }
@@ -108,7 +109,7 @@ include __DIR__ . '/../../includes/Header.php'; ?>
         <section class="fsec">
             <div class="fsec-head">
                 <h2>Informasi Shift</h2>
-                <p>Nama dan keterangan yang tampil di halaman jadwal.</p>
+                <p>Nama shift yang tampil di halaman jadwal.</p>
             </div>
             <div class="fsec-body">
                 <div class="field">
