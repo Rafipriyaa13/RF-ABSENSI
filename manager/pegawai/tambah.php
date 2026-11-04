@@ -223,4 +223,39 @@ include __DIR__ . '/../../includes/Header.php';
     </aside>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chips = document.querySelectorAll('.chip');
+    const inputMulai = document.getElementById('kontrak_mulai');
+    const inputSelesai = document.getElementById('kontrak_selesai');
+
+    // Fungsi pembantu untuk memformat tanggal ke YYYY-MM-DD
+    function formatTanggal(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    chips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            const tambahanBulan = parseInt(this.getAttribute('data-bulan'));
+
+            // Ambil tanggal dari kolom 'Mulai' jika sudah diisi, jika kosong pakai tanggal hari ini
+            const tanggalMulai = inputMulai.value ? new Date(inputMulai.value) : new Date();
+            
+            // Set nilai input mulai 
+            inputMulai.value = formatTanggal(tanggalMulai);
+
+            // Hitung tanggal selesai dengan menambahkan bulan
+            const tanggalSelesai = new Date(tanggalMulai);
+            tanggalSelesai.setMonth(tanggalSelesai.getMonth() + tambahanBulan);
+            
+            // Set nilai input selesai
+            inputSelesai.value = formatTanggal(tanggalSelesai);
+        });
+    });
+});
+</script>
+
 <?php include __DIR__ . '/../../includes/Footer.php'; ?>
