@@ -1032,3 +1032,81 @@ body.nav-collapsed .main {
 }
 
 .shift-item .act { margin-top: 10px; display: flex; gap: 8px }
+
+
+.login-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: linear-gradient(var(--red) 0 260px, var(--bg) 260px)
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 32px 28px;
+    box-shadow: 0 10px 30px rgba(17, 24, 39, .12)
+}
+
+.login-logo { text-align: center; margin-bottom: 20px }
+
+.login-logo img { max-width: 160px; width: 100%; height: auto; object-fit: contain }
+
+.login-card h1 { font-size: 22px; text-align: center }
+
+.login-sub { text-align: center; color: var(--muted); margin: 4px 0 22px }
+
+.login-card .alert { margin-bottom: 16px; font-size: 13px }
+
+.login-form { display: grid; gap: 16px }
+
+.pw { position: relative }
+
+.pw input { padding-right: 44px }
+
+.pw-toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: var(--muted);
+    display: grid;
+    place-items: center
+}
+
+.pw-toggle:hover { color: var(--ink) }
+.pw-toggle .slash { display: none }
+.pw-toggle[aria-pressed="true"] .slash { display: block }
+
+.caps { font-size: 12px; color: #b45309 }
+
+.check { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer }
+.check input { width: 16px; height: 16px; accent-color: var(--red); cursor: pointer }
+
+.login-btn {
+    height: 44px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--red);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s
+}
+
+.login-btn:hover { background: #c9111f }
+.login-btn:disabled { opacity: .7; cursor: wait }
+
+.login-foot { text-align: center; font-size: 12px; color: var(--muted); margin-top: 20px; line-height: 1.5 }
+
+@media (max-width:480px) {
+    .login-page { padding: 16px }
+    .login-card { padding: 24px 20px }
+}
