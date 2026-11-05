@@ -1039,7 +1039,7 @@ body.nav-collapsed .main {
     display: grid;
     place-items: center;
     padding: 24px;
-    background: linear-gradient(var(--red) 0 260px, var(--bg) 260px)
+    background: var(--bg)
 }
 
 .login-card {
