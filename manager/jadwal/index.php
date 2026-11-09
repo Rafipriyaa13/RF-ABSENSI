@@ -10,7 +10,7 @@ date_default_timezone_set('Asia/Jakarta');
 const HARI  = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const BULAN = [1 => 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
-/* ------------------ Helper tampilan (tanggal) ------------------ */
+/* ------------------ Helper tanggal ------------------ */
 
 function senin_dari(?string $param): DateTimeImmutable
 {
@@ -38,23 +38,122 @@ function rentang_minggu(DateTimeImmutable $a): string
     return "$ta – $tb $bb $ya";
 }
 
-/* =====================================================================
- * KONTRAK DATA (untuk backend)
- * Frontend hanya membaca variabel di bawah ini. Ganti nilai DUMMY dengan
- * hasil query database. Struktur/nama kunci jangan diubah.
- *
- *  $senin    DateTimeImmutable  Senin awal minggu yang ditampilkan (dari ?minggu=Y-m-d)
- *  $karyawan  [ ['id'=>int, 'nama'=>str, 'jabatan'=>str], ... ]   urut per posisi
- *  $shift    [ ['id'=>str, 'nama'=>str, 'mulai'=>'HH:MM', 'selesai'=>'HH:MM', 'ket'=>str], ... ]
- *  $cuti     [ id_pegawai => ['Y-m-d' => true, ...] ]           cuti disetujui (sel terkunci)
- *  $jadwal   [ id_pegawai => [0..6 => kode_shift | 'libur'] ]   0 = Senin ... 6 = Minggu
- *  $prev     sama seperti $jadwal, untuk minggu sebelumnya (tombol "Salin dari minggu lalu")
- *  $flash    ['tipe'=>'sukses'|'error', 'pesan'=>str] atau null
- *
- * FORM "Simpan" (POST ke halaman ini, aksi=simpan):
- *   jadwal[ID_PEGAWAI][HARI_0_6] = kode shift / 'libur' / '' (kosong = belum dijadwalkan)
- *   Sel cuti tidak dikirim (terkunci).
- * ===================================================================== */
+/* ------------------ Helper data ------------------ */
+
+// Jadwal satu minggu → [id_pegawai => [0..6 => 'id_shift' | 'libur']]
+// (id shift sengaja berupa string, agar cocok dengan value <option> dan JS)
+function ambil_jadwal(PDO $pdo, DateTimeImmutable $senin): array
+{
+    $st = $pdo->prepare("
+        SELECT user_id, shift_id, tanggal, status
+        FROM jadwal
+        WHERE tanggal BETWEEN ? AND ?
+    ");
+    $st->execute([$senin->format('Y-m-d'), $senin->modify('+6 days')->format('Y-m-d')]);
+
+    $hasil = [];
+    foreach ($st->fetchAll() as $r) {
+        $hari = (int)$senin->diff(new DateTimeImmutable(substr($r['tanggal'], 0, 10)))->days;   // 0 = Senin
+        if ($r['status'] === 'libur')    $nilai = 'libur';
+        elseif ($r['shift_id'] !== null) $nilai = (string)$r['shift_id'];
+        else                             continue;
+        $hasil[(int)$r['user_id']][$hari] = $nilai;
+    }
+    return $hasil;
+}
+
+/* ===================== PROSES SIMPAN (POST) =====================
+ * Form: aksi=simpan, minggu=Y-m-d, jadwal[ID_PEGAWAI][HARI_0_6] = id_shift | 'libur' | ''
+ * ('' = belum dijadwalkan → baris jadwal dihapus)
+ * ================================================================ */
+$errors = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'simpan') {
+    $mingguPost = senin_dari($_POST['minggu'] ?? null);
+    $sen = $mingguPost->format('Y-m-d');
+
+    // 1) Tolak minggu yang sudah lewat
+    if ($sen < senin_dari(null)->format('Y-m-d')) {
+        $errors[] = 'Jadwal minggu yang sudah lewat tidak bisa diubah.';
+    }
+
+    // 2) Data pembanding dari database (jangan percaya kiriman form)
+    $idPegawai = array_map('intval', $pdo->query("SELECT id FROM users WHERE status = 'aktif'")->fetchAll(PDO::FETCH_COLUMN));
+    $idShift   = array_map('intval', $pdo->query("SELECT id FROM shift")->fetchAll(PDO::FETCH_COLUMN));
+    $cutiPost  = [];   // TODO: isi dari izin_cuti setelah modul cuti jadi
+
+    // 3) Periksa tiap sel
+    $simpan = [];   // [user_id, shift_id|null, tanggal, status]
+    $hapus  = [];   // [user_id, tanggal]
+
+    if (!$errors) {
+        $kiriman = $_POST['jadwal'] ?? null;
+        if (!is_array($kiriman)) {
+            $errors[] = 'Data jadwal tidak valid.';
+        } else {
+            foreach ($kiriman as $pid => $perHari) {
+                $pid = (int)$pid;
+                if (!in_array($pid, $idPegawai, true) || !is_array($perHari)) continue;
+
+                foreach ($perHari as $h => $nilai) {
+                    if (!ctype_digit((string)$h) || (int)$h > 6 || !is_string($nilai)) {
+                        $errors[] = 'Data jadwal tidak valid.';
+                        break 2;
+                    }
+                    $tgl = $mingguPost->modify('+' . (int)$h . ' days')->format('Y-m-d');
+                    if (isset($cutiPost[$pid][$tgl])) continue;   // sel cuti tidak disentuh
+
+                    $nilai = trim($nilai);
+                    if ($nilai === '') {
+                        $hapus[] = [$pid, $tgl];
+                    } elseif ($nilai === 'libur') {
+                        $simpan[] = [$pid, null, $tgl, 'libur'];
+                    } elseif (ctype_digit($nilai) && in_array((int)$nilai, $idShift, true)) {
+                        $simpan[] = [$pid, (int)$nilai, $tgl, 'terjadwal'];
+                    } else {
+                        $errors[] = 'Data jadwal tidak valid.';
+                        break 2;
+                    }
+                }
+            }
+        }
+    }
+
+    // 4) Simpan dalam satu transaksi
+    if (!$errors) {
+        $idManager = 5; // MANAGER SEMENTARA   
+        try {
+            $pdo->beginTransaction();
+
+            $up = $pdo->prepare("
+                INSERT INTO jadwal (user_id, shift_id, tanggal, status, created_by)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (user_id, tanggal) DO UPDATE
+                SET shift_id = EXCLUDED.shift_id, status = EXCLUDED.status, created_by = EXCLUDED.created_by
+            ");
+            foreach ($simpan as [$pid, $sid, $tgl, $status]) {
+                $up->execute([$pid, $sid, $tgl, $status, $idManager]);
+            }
+
+            $del = $pdo->prepare("DELETE FROM jadwal WHERE user_id = ? AND tanggal = ?");
+            foreach ($hapus as [$pid, $tgl]) {
+                $del->execute([$pid, $tgl]);
+            }
+
+            $pdo->commit();
+
+            set_flash('sukses', 'Jadwal minggu ' . rentang_minggu($mingguPost) . ' berhasil disimpan.');
+            header('Location: index.php?minggu=' . $sen);
+            exit;
+        } catch (PDOException $ex) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            error_log('simpan jadwal gagal [' . $ex->getCode() . ']: ' . $ex->getMessage());
+            $errors[] = 'Terjadi kesalahan saat menyimpan jadwal.';
+        }
+    }
+}
+
+/* ===================== DATA UNTUK TAMPILAN (GET) ===================== */
 $senin = senin_dari($_GET['minggu'] ?? null);
 
 $karyawan = $pdo->query("
@@ -62,38 +161,31 @@ $karyawan = $pdo->query("
            COALESCE(NULLIF(TRIM(u.jabatan), ''), 'Belum Ditentukan') AS jabatan_grup
     FROM users u
     WHERE u.status = 'aktif'
-    ORDER BY jabatan_grup, u.nama;
+    ORDER BY jabatan_grup, u.nama
 ")->fetchAll();
 
-$shift = 
-    $pdo->query("
-    SELECT id as id, nama_shift as nama, jam_mulai as mulai, jam_selesai as selesai
-    FROM shift;
+$shift = $pdo->query("
+    SELECT id, nama_shift AS nama,
+           to_char(jam_mulai, 'HH24:MI')   AS mulai,
+           to_char(jam_selesai, 'HH24:MI') AS selesai
+    FROM shift
+    ORDER BY id
 ")->fetchAll();
 
 $KETERANGAN_SHIFT = [
     'pagi'  => 'Shift operasional pegawai outlet pagi',
-    'sore' => 'Shift operasional pegawai outlet sore',
+    'sore'  => 'Shift operasional pegawai outlet sore',
     'malam' => 'Shift operasional pegawai outlet malam',
 ];
 
-
-$cuti = [      // DUMMY (Dewi cuti Jum-Sab minggu 26 Okt 2026)
-    2 => ['2026-10-30' => true, '2026-10-31' => true],
-];
-
-$jadwal = [    // DUMMY (sama untuk semua minggu)
-    1 => ['pagi', 'pagi', 'pagi', 'libur', 'pagi', 'pagi', 'pagi'],
-    2 => ['malam', 'malam', 'malam', 'malam', 'libur', 'libur', 'pagi'],
-    3 => ['pagi', 'pagi', 'siang', 'siang', 'libur', 'pagi', 'pagi'],
-    4 => ['siang', 'siang', 'libur', 'siang', 'siang', 'malam', 'malam'],
-];
-$prev = $jadwal;   // DUMMY
+$jadwal = ambil_jadwal($pdo, $senin);
+$prev   = ambil_jadwal($pdo, $senin->modify('-7 days'));
+$cuti   = [];  
 
 $flash = get_flash();
 
-/* ---- Turunan untuk tampilan (tidak perlu diubah) ---- */
-$kodeShift = array_column($shift, 'id');
+/* ---- Turunan untuk tampilan ---- */
+$kodeShift = array_map('strval', array_column($shift, 'id'));
 $kodeValid = array_merge($kodeShift, ['libur']);
 $hariIni   = date('Y-m-d');
 $mingguIni = senin_dari(null)->format('Y-m-d');
@@ -124,6 +216,12 @@ include __DIR__ . '/../../includes/Header.php'; ?>
     <div class="alert alert-<?= e($flash['tipe']) ?>"><?= e($flash['pesan']) ?></div>
 <?php endif; ?>
 
+<?php if (!empty($errors)): ?>
+    <ul class="form-errors">
+        <?php foreach ($errors as $err): ?><li><?= e($err) ?></li><?php endforeach; ?>
+    </ul>
+<?php endif; ?>
+
 <!-- ============ Konfigurasi Shift ============ -->
 <section class="card">
     <div class="jd-head">
@@ -134,9 +232,9 @@ include __DIR__ . '/../../includes/Header.php'; ?>
         <?php foreach ($shift as $s): ?>
             <article class="shift-item s-<?= e($s['id']) ?>">
                 <div class="top"><b><?= e('Shift ' . $s['nama']) ?></b><span><?= e($s['mulai']) ?> - <?= e($s['selesai']) ?></span></div>
-                <p><?= $ket = $KETERANGAN_SHIFT[strtolower($s['nama'])] ?? ''; ?></p>
-                <div class="act"><a class="btn-edit btn-sm" href="edit.php?id=<?= urlencode($s['id']) ?>">Edit</a>
-                    <a class="btn-delete btn-sm" href="hapus.php?id=<?= urlencode($s['id']) ?>">Hapus</a></div>
+                <p><?= e($KETERANGAN_SHIFT[strtolower($s['nama'])] ?? '') ?></p>
+                <div class="act"><a class="btn-edit btn-sm" href="edit.php?id=<?= (int)$s['id'] ?>">Edit</a>
+                    <a class="btn-delete btn-sm" href="hapus.php?id=<?= (int)$s['id'] ?>">Hapus</a></div>
             </article>
         <?php endforeach; ?>
     </div>
@@ -147,6 +245,7 @@ include __DIR__ . '/../../includes/Header.php'; ?>
 <section class="card">
     <form method="post" action="" id="jd-form">
         <input type="hidden" name="aksi" value="simpan">
+        <input type="hidden" name="minggu" value="<?= e($senin->format('Y-m-d')) ?>">
 
         <div class="jd-head">
             <h2>Penjadwalan Mingguan</h2>
@@ -213,7 +312,7 @@ include __DIR__ . '/../../includes/Header.php'; ?>
                                                 aria-label="Shift <?= e($p['nama']) ?>, <?= HARI[$i] ?>">
                                             <option value="">—</option>
                                             <?php foreach ($shift as $s): ?>
-                                                <option value="<?= e($s['id']) ?>" <?= $val === $s['id'] ? 'selected' : '' ?>><?= e($s['nama']) ?></option>
+                                                <option value="<?= e($s['id']) ?>" <?= $val === (string)$s['id'] ? 'selected' : '' ?>><?= e($s['nama']) ?></option>
                                             <?php endforeach; ?>
                                             <option value="libur" <?= $val === 'libur' ? 'selected' : '' ?>>Libur</option>
                                         </select>
@@ -227,12 +326,12 @@ include __DIR__ . '/../../includes/Header.php'; ?>
                     <tr>
                         <td class="left col-pos"></td>
                         <td class="left sticky">Ringkasan</td>
-                        
+
                         <?php for ($i = 0; $i < 7; $i++): ?>
                             <td>
                                 <div class="sum">
                                     <?php foreach ($shift as $s):
-                                        $n = $ring[$i][$s['id']] ?? 0; ?>
+                                        $n = $ring[$i][(string)$s['id']] ?? 0; ?>
                                         <div class="s-<?= e($s['id']) ?><?= $n === 0 ? ' zero' : '' ?>"><i></i><?= e($s['nama']) ?> <b data-sum="<?= $i ?>|<?= e($s['id']) ?>"><?= $n ?></b></div>
                                     <?php endforeach; ?>
                                 </div>
