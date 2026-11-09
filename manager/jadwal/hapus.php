@@ -5,27 +5,49 @@ require_once __DIR__ . '/../../config/database.php';
 // require_once __DIR__ . '/../../includes/Auth.php';
 // cek_role('manager');   // aktifkan setelah login selesai
 
-/* =====================================================================
- * KONTRAK DATA (untuk backend)
- * URL: hapus.php?kode=pagi
- * FORM (POST ke halaman ini): kode
- *
- *  $kode     kode shift yang akan dihapus.
- *  $shift    ['kode'=>, 'nama'=>, 'mulai'=>'HH:MM', 'selesai'=>'HH:MM', 'ket'=>]  data shift.
- *  $dipakai  int, jumlah sel jadwal yang masih memakai shift ini (0 = tidak dipakai).
- *            Aturan jika > 0 (ditolak, atau jadwal dikosongkan) ditentukan backend.
- *  $errors   array of string. Isi jika penghapusan ditolak.
- *
- * Jika kode tidak ditemukan: set_flash('error', 'Shift tidak ditemukan.'); header('Location: index.php'); exit;
- * Setelah sukses hapus:      set_flash('sukses', '...'); header('Location: index.php'); exit;
- * ===================================================================== */
-$kode   = (string)($_GET['kode'] ?? '');
+$id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+if (!$id) {
+    set_flash('error', 'ID shift tidak valid.');
+    header('Location: index.php');
+    exit;
+}
+
 $errors = [];
-$dipakai = 3;   // DUMMY
-$shift  = [     // DUMMY
-    'kode' => $kode ?: 'pagi', 'nama' => 'Pagi', 'mulai' => '07:00', 'selesai' => '15:00',
-    'ket' => 'Shift operasional dapur & kasir pagi',
-];
+
+$stmt = $pdo->prepare("
+    SELECT id, nama_shift AS nama, jam_mulai AS mulai, jam_selesai AS selesai 
+    FROM shift 
+    WHERE id = ?
+");
+$stmt->execute([$id]);
+$shift = $stmt->fetch();
+
+if (!$shift) {
+    set_flash('error', 'Shift tidak ditemukan.');
+    header('Location: index.php');
+    exit;
+}
+
+$stmtCheck = $pdo->prepare("SELECT COUNT(*) FROM jadwal WHERE shift_id = ?");
+$stmtCheck->execute([$id]);
+$dipakai = (int)$stmtCheck->fetchColumn();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $stmtDelete = $pdo->prepare("DELETE FROM shift WHERE id = ?");
+        $stmtDelete->execute([$id]);
+
+        set_flash('sukses', 'Shift "' . $shift['nama'] . '" berhasil dihapus.');
+        header('Location: index.php');
+        exit;
+    } catch (PDOException $ex) {
+        if ($ex->getCode() === '23503') {
+            $errors[] = 'Gagal menghapus shift: Shift ini masih digunakan pada data jadwal. Kosongkan atau ganti jadwal terkait terlebih dahulu.';
+        } else {
+            $errors[] = 'Gagal menghapus shift: ' . $ex->getMessage();
+        }
+    }
+}
 
 $pageTitle    = 'Hapus Shift';
 $pageSubtitle = 'Konfirmasi penghapusan shift';
@@ -38,7 +60,7 @@ include __DIR__ . '/../../includes/Header.php'; ?>
 
 <div style="max-width: 760px">
     <form method="post" action="" class="card form">
-        <input type="hidden" name="kode" value="<?= e($shift['kode']) ?>">
+        <input type="hidden" name="id" value="<?= e($shift['id']) ?>">
 
         <?php if (!empty($errors)): ?>
             <ul class="form-errors">
@@ -52,9 +74,11 @@ include __DIR__ . '/../../includes/Header.php'; ?>
                 <p>Tindakan ini tidak dapat dibatalkan.</p>
             </div>
             <div class="fsec-body">
-                <article class="shift-item s-<?= e($shift['kode']) ?>">
-                    <div class="top"><b><?= e('Shift ' . $shift['nama']) ?></b><span><?= e($shift['mulai']) ?> - <?= e($shift['selesai']) ?></span></div>
-                    <?php if ($shift['ket'] !== ''): ?><p><?= e($shift['ket']) ?></p><?php endif; ?>
+                <article class="shift-item s-<?= e($shift['id']) ?>">
+                    <div class="top">
+                        <b><?= e('Shift ' . $shift['nama']) ?></b>
+                        <span><?= e($shift['mulai']) ?> - <?= e($shift['selesai']) ?></span>
+                    </div>
                 </article>
 
                 <?php if ($dipakai > 0): ?>
