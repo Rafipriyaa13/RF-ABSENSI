@@ -3,7 +3,7 @@ $menu = [
     'dashboard'   => ['Dashboard',   '/manager/dashboard.php'],
     'kepegawaian' => ['Kepegawaian', '/manager/pegawai/index.php'],
     'jadwal'      => ['Jadwal',      '/manager/jadwal/index.php'],
-    'absensi'     => ['Absensi',     '/manager/absensi/log.php'],
+    'absensi'     => ['Absensi',     '/manager/absensi/riwayat.php'],
     'izin'        => ['Izin / Cuti', '/manager/izin_cuti/index.php'],
     'laporan'     => ['Laporan',     '/manager/laporan/rekap.php'],
 ];
