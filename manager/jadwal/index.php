@@ -226,15 +226,15 @@ include __DIR__ . '/../../includes/Header.php'; ?>
 <section class="card">
     <div class="jd-head">
         <h2>Konfigurasi Shift</h2>
-        <a class="btn btn-sm" href="tambah.php">+ Tambah</a>
+        <a class="btn btn-sm" href="../shift/tambah.php">+ Tambah</a>
     </div>
     <div class="shift-list">
         <?php foreach ($shift as $s): ?>
             <article class="shift-item s-<?= e($s['id']) ?>">
                 <div class="top"><b><?= e('Shift ' . $s['nama']) ?></b><span><?= e($s['mulai']) ?> - <?= e($s['selesai']) ?></span></div>
                 <p><?= e($KETERANGAN_SHIFT[strtolower($s['nama'])] ?? '') ?></p>
-                <div class="act"><a class="btn-edit btn-sm" href="edit.php?id=<?= (int)$s['id'] ?>">Edit</a>
-                    <a class="btn-delete btn-sm" href="hapus.php?id=<?= (int)$s['id'] ?>">Hapus</a></div>
+                <div class="act"><a class="btn-edit btn-sm" href="../shift/edit.php?id=<?= (int)$s['id'] ?>">Edit</a>
+                    <a class="btn-delete btn-sm" href="../shift/hapus.php?id=<?= (int)$s['id'] ?>">Hapus</a></div>
             </article>
         <?php endforeach; ?>
     </div>
