@@ -168,26 +168,28 @@ include __DIR__ . '/../../includes/Header.php';
             </tbody>
         </table>
     </div>
-    <?php if ($totalPages > 1): ?>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+        <?php if ($totalPages > 1): ?>
+        <!-- Tambahkan padding dan border-top -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--line);">
+            
             <?php if ($page > 1): ?>
                 <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" class="btn-reset"
                     style="text-decoration:none;">&laquo; Sebelumnya</a>
             <?php else: ?>
-                <span></span>
+                <span style="width: 100px;"></span> <!-- Placeholder agar text tengah tetap di tengah -->
             <?php endif; ?>
 
-            <span>Halaman
-                <?= $page ?> /
-                <?= $totalPages ?>
+            <span style="color: var(--muted); font-size: 13px; font-weight: 500;">
+                Halaman <?= $page ?> dari <?= $totalPages ?>
             </span>
 
             <?php if ($page < $totalPages): ?>
                 <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" class="btn-reset"
                     style="text-decoration:none;">Berikutnya &raquo;</a>
             <?php else: ?>
-                <span></span>
+                <span style="width: 100px;"></span> <!-- Placeholder agar text tengah tetap di tengah -->
             <?php endif; ?>
+            
         </div>
     <?php endif; ?>
 </section>
