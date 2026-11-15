@@ -1,68 +1,165 @@
 <?php
-// manager/dashboard.php  (FRONTEND SAJA, data masih dummy)
-// CSS ada di assets/css/style.css
+// manager/dashboard.php
 require_once __DIR__ . '/../includes/Functions.php';
+require_once __DIR__ . '/../config/database.php';
+
+date_default_timezone_set('Asia/Jakarta');
 
 $pageTitle    = 'Dashboard';
 $pageSubtitle = 'Ringkasan kondisi hari ini';
 $activeMenu   = 'dashboard';
 $topAction    = null;
 
-/*
- * ===== DATA DUMMY (backend cukup mengisi dua array ini) =====
- *
- * $shiftHariIni : daftar shift hari ini beserta pegawai yang dijadwalkan.
- *   pegawai.status : 'Hadir' | 'Terlambat' | 'Belum Absen' | 'Izin'
- *   pegawai.jam    : jam check-in (HH:MM) atau null kalau belum absen
- *
- * $perluTindakan : daftar hal yang perlu diurus manager.
- *   warna : 'merah' | 'kuning' | 'biru'
- *
- * Kartu ringkasan dan "Aktivitas Terbaru" dihitung otomatis dari $shiftHariIni.
- */
-$shiftHariIni = [
-    ['jam' => '07:30 - 12:30', 'pegawai' => [
-        ['nama' => 'Siti Aminah',   'jabatan' => 'Cashier',       'status' => 'Hadir',       'jam' => '07:25'],
-        ['nama' => 'Budi Santoso',  'jabatan' => 'Kitchen Staff', 'status' => 'Terlambat',   'jam' => '07:41'],
-        ['nama' => 'Dewi Lestari',  'jabatan' => 'Crew',          'status' => 'Hadir',       'jam' => '07:28'],
-        ['nama' => 'Andi Wijaya',   'jabatan' => 'Store Manager', 'status' => 'Hadir',       'jam' => '07:20'],
-    ]],
-    ['jam' => '15:30 - 21:30', 'pegawai' => [
-        ['nama' => 'Rizky Pratama', 'jabatan' => 'Cashier',       'status' => 'Belum Absen', 'jam' => null],
-        ['nama' => 'Ayu Wulandari', 'jabatan' => 'Crew',          'status' => 'Belum Absen', 'jam' => null],
-        ['nama' => 'Rina Marlina',  'jabatan' => 'Kitchen Staff', 'status' => 'Belum Absen', 'jam' => null],
-        ['nama' => 'Eko Prasetyo',  'jabatan' => 'Crew',          'status' => 'Izin',        'jam' => null],
-    ]],
-];
+// =====================================================================
+// 1. SHIFT HARI INI & STATUS PEGAWAI (Sekaligus sumber data Kartu Ringkasan)
+// =====================================================================
+$sql_shift = "
+    SELECT 
+        s.id AS shift_id,
+        s.nama_shift, 
+        TO_CHAR(s.jam_mulai, 'HH24:MI') || ' - ' || TO_CHAR(s.jam_selesai, 'HH24:MI') AS jam,
+        u.nama, 
+        u.jabatan,
+        CASE 
+            WHEN a.status_kehadiran = 'tepat_waktu' THEN 'Hadir'
+            WHEN a.status_kehadiran = 'terlambat' THEN 'Terlambat'
+            WHEN EXISTS (
+                SELECT 1 FROM izin_cuti ic 
+                WHERE ic.user_id = u.id 
+                  AND ic.status_approval = 'disetujui' 
+                  AND CURRENT_DATE BETWEEN ic.tanggal_mulai AND ic.tanggal_selesai
+            ) THEN 'Izin'
+            ELSE 'Belum Absen'
+        END AS status,
+        TO_CHAR(a.check_in, 'HH24:MI') AS jam_absen
+    FROM jadwal j
+    INNER JOIN shift s ON j.shift_id = s.id
+    INNER JOIN users u ON j.user_id = u.id
+    LEFT JOIN absensi a ON a.jadwal_id = j.id
+    WHERE j.tanggal = CURRENT_DATE 
+      AND j.status = 'terjadwal'
+      AND u.status = 'aktif'
+    ORDER BY s.jam_mulai ASC, u.nama ASC
+";
+$raw_shift = $pdo->query($sql_shift)->fetchAll();
 
-$perluTindakan = [
-    ['warna' => 'kuning', 'jumlah' => 3, 'judul' => 'Izin / cuti menunggu persetujuan',
-     'detail' => 'Siti Aminah, Budi Santoso, Dewi Lestari',
-     'link' => '/manager/izin_cuti/index.php', 'tombol' => 'Tinjau'],
-    ['warna' => 'merah',  'jumlah' => 2, 'judul' => 'Kontrak berakhir dalam 30 hari',
-     'detail' => 'Rizky Pratama (12 Des 2026), Ayu Wulandari (28 Nov 2026)',
-     'link' => '/manager/pegawai/index.php', 'tombol' => 'Lihat'],
-    ['warna' => 'biru',   'jumlah' => 1, 'judul' => 'Pegawai belum punya kartu RFID',
-     'detail' => 'Rina Marlina',
-     'link' => '/manager/pegawai/index.php', 'tombol' => 'Daftarkan'],
-];
+// Hitung Kartu Ringkasan & Kelompokkan Shift dalam satu kali loop
+$hitung      = ['Hadir' => 0, 'Terlambat' => 0, 'Belum Absen' => 0, 'Izin' => 0];
+$dijadwalkan = count($raw_shift);
+$shiftHariIni = [];
 
-// ---------- Hitung ringkasan dari data shift ----------
-$hitung = ['Hadir' => 0, 'Terlambat' => 0, 'Belum Absen' => 0, 'Izin' => 0];
-$aktivitas = [];
-$dijadwalkan = 0;
-foreach ($shiftHariIni as $s) {
-    foreach ($s['pegawai'] as $p) {
-        $dijadwalkan++;
-        $hitung[$p['status']]++;
-        if ($p['jam']) {
-            $aktivitas[] = $p;
-        }
+foreach ($raw_shift as $row) {
+    // Akumulasi statistik kartu atas
+    if ($row['status'] === 'Hadir') {
+        $hitung['Hadir']++;
+    } elseif ($row['status'] === 'Terlambat') {
+        $hitung['Terlambat']++;
+        $hitung['Hadir']++;
+    } elseif ($row['status'] === 'Izin') {
+        $hitung['Izin']++;
+    } else {
+        $hitung['Belum Absen']++;
     }
+
+    // Kelompokkan berdasarkan ID Shift
+    $sid = $row['shift_id'];
+    if (!isset($shiftHariIni[$sid])) {
+        $shiftHariIni[$sid] = [
+            'judul'   => 'Shift ' . $row['nama_shift'] . ' (' . $row['jam'] . ')',
+            'pegawai' => []
+        ];
+    }
+    $shiftHariIni[$sid]['pegawai'][] = [
+        'nama'    => $row['nama'],
+        'jabatan' => $row['jabatan'],
+        'status'  => $row['status'],
+        'jam'     => $row['jam_absen']
+    ];
 }
-usort($aktivitas, fn($a, $b) => strcmp($b['jam'], $a['jam']));   // terbaru dulu
-$aktivitas = array_slice($aktivitas, 0, 5);
-$totalHadir = $hitung['Hadir'] + $hitung['Terlambat'];
+$totalHadir   = $hitung['Hadir'];
+$shiftHariIni = array_values($shiftHariIni);
+
+// =====================================================================
+// 2. AKTIVITAS ABSENSI TERBARU
+// =====================================================================
+$sql_aktivitas = "
+    SELECT 
+        u.nama, 
+        u.jabatan, 
+        CASE 
+            WHEN a.status_kehadiran = 'tepat_waktu' THEN 'Hadir'
+            WHEN a.status_kehadiran = 'terlambat' THEN 'Terlambat'
+            ELSE a.status_kehadiran
+        END AS status, 
+        TO_CHAR(a.check_in, 'HH24:MI') AS jam
+    FROM absensi a
+    INNER JOIN jadwal j ON a.jadwal_id = j.id
+    INNER JOIN users u ON a.user_id = u.id
+    WHERE j.tanggal = CURRENT_DATE
+    ORDER BY a.check_in DESC
+    LIMIT 5
+";
+$aktivitas = $pdo->query($sql_aktivitas)->fetchAll();
+
+// =====================================================================
+// 3. PERLU TINDAKAN
+// =====================================================================
+$perluTindakan = [];
+
+// A. Izin/Cuti Menunggu
+$izin_pending = $pdo->query("
+    SELECT COUNT(*) AS jml, STRING_AGG(u.nama, ', ' ORDER BY i.tanggal_mulai ASC) AS detail
+    FROM izin_cuti i 
+    JOIN users u ON i.user_id = u.id 
+    WHERE i.status_approval = 'menunggu'
+")->fetch();
+if ($izin_pending['jml'] > 0) {
+    $perluTindakan[] = [
+        'warna'  => 'kuning',
+        'jumlah' => $izin_pending['jml'],
+        'judul'  => 'Izin / cuti menunggu persetujuan',
+        'detail' => $izin_pending['detail'] ?? '-',
+        'link'   => 'izin_cuti/index.php?tab=menunggu',
+        'tombol' => 'Tinjau'
+    ];
+}
+
+// B. Kontrak Berakhir <= 30 Hari
+$kontrak_habis = $pdo->query("
+    SELECT COUNT(*) AS jml, STRING_AGG(nama || ' (' || TO_CHAR(kontrak_selesai, 'DD Mon YYYY') || ')', ', ' ORDER BY kontrak_selesai ASC) AS detail
+    FROM users 
+    WHERE status = 'aktif' 
+      AND kontrak_selesai IS NOT NULL 
+      AND kontrak_selesai <= CURRENT_DATE + 30
+")->fetch();
+if ($kontrak_habis['jml'] > 0) {
+    $perluTindakan[] = [
+        'warna'  => 'merah',
+        'jumlah' => $kontrak_habis['jml'],
+        'judul'  => 'Kontrak berakhir dalam 30 hari',
+        'detail' => $kontrak_habis['detail'] ?? '-',
+        'link'   => 'pegawai/index.php',
+        'tombol' => 'Lihat'
+    ];
+}
+
+// C. Belum Punya RFID (Menangani NULL maupun string kosong '')
+$rfid_kosong = $pdo->query("
+    SELECT COUNT(*) AS jml, STRING_AGG(nama, ', ' ORDER BY nama ASC) AS detail
+    FROM users 
+    WHERE status = 'aktif' 
+      AND NULLIF(TRIM(rfid_uid), '') IS NULL
+")->fetch();
+if ($rfid_kosong['jml'] > 0) {
+    $perluTindakan[] = [
+        'warna'  => 'biru',
+        'jumlah' => $rfid_kosong['jml'],
+        'judul'  => 'Pegawai belum punya kartu RFID',
+        'detail' => $rfid_kosong['detail'] ?? '-',
+        'link'   => 'pegawai/index.php',
+        'tombol' => 'Daftarkan'
+    ];
+}
 
 $hariNama = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 $tanggalHariIni = $hariNama[(int) date('w')] . ', ' . tgl_indo(date('Y-m-d'));
@@ -148,7 +245,7 @@ include __DIR__ . '/../includes/Header.php';
         <?php foreach ($shiftHariIni as $s): ?>
             <article class="shift-box">
                 <header>
-                    <strong><?= e($s['jam']) ?></strong>
+                    <strong><?= e($s['judul']) ?></strong>
                     <small><?= count($s['pegawai']) ?> pegawai</small>
                 </header>
                 <ul>
@@ -156,7 +253,9 @@ include __DIR__ . '/../includes/Header.php';
                         <li>
                             <span>
                                 <?= e($p['nama']) ?>
-                                <small class="muted-text"><?= e($p['jabatan']) ?></small>
+                                <small class="muted-text">
+                                    <?= e($p['jabatan']) ?><?= !empty($p['jam']) ? ' &middot; ' . e($p['jam']) : '' ?>
+                                </small>
                             </span>
                             <span class="badge <?= str_replace(' ', '-', strtolower($p['status'])) ?>"><?= e($p['status']) ?></span>
                         </li>
