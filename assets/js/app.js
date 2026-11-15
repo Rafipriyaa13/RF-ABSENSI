@@ -112,68 +112,6 @@
     tampil();
 })();
 
-// ===== Halaman Riwayat Absensi (manager/absensi/riwayat.php) =====
-(function () {
-    'use strict';
-
-    const panel = document.getElementById('absensi-panel');
-    if (!panel) return;                      // bukan halaman ini
-
-    // Data dikirim dari PHP lewat atribut data-absensi (JSON)
-    const data = JSON.parse(panel.dataset.absensi || '[]');
-
-    const qInput  = document.getElementById('abs-q');
-    const jabatan = document.getElementById('abs-jabatan');
-    const tanggal = document.getElementById('abs-tanggal');
-    const reset   = document.getElementById('abs-reset');
-    const info    = document.getElementById('abs-info');
-    const rows    = document.getElementById('abs-rows');
-    const tanggalAwal = tanggal.value;       // hari ini (default)
-
-    const BULAN_PENUH  = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const labelTanggal = (v) => { const [y, m, d] = v.split('-'); return `${+d} ${BULAN_PENUH[m - 1]} ${y}`; };
-
-    function render() {
-        const kw = qInput.value.trim().toLowerCase();
-
-        const list = data
-            .filter((r) => r.tanggal === tanggal.value
-                && (!jabatan.value || r.jabatan === jabatan.value)
-                && (r.nama.toLowerCase().includes(kw) || r.kode.toLowerCase().includes(kw)))
-            .sort((a, b) => b.jam_masuk.localeCompare(a.jam_masuk));
-
-        rows.innerHTML = list.map((r) => `
-            <tr>
-                <td data-label="ID" class="strong">${esc(r.kode)}</td>
-                <td data-label="Nama">${esc(r.nama)}</td>
-                <td data-label="Jabatan">${esc(r.jabatan)}</td>
-                <td data-label="Shift">${esc(r.shift)}</td>
-                <td data-label="Jam Masuk">${esc(r.jam_masuk)}</td>
-                <td data-label="Status"><span class="badge ${r.status.toLowerCase()}">${esc(r.status)}</span></td>
-            </tr>`).join('') || '<tr><td colspan="6" class="empty">Tidak ada data absensi yang sesuai.</td></tr>';
-
-        info.innerHTML = `Menampilkan <strong>${list.length}</strong> data pada <strong>${labelTanggal(tanggal.value)}</strong>`;
-        reset.hidden = !(kw || jabatan.value || tanggal.value !== tanggalAwal);
-    }
-
-    qInput.addEventListener('input', render);
-    jabatan.addEventListener('change', render);
-    tanggal.addEventListener('change', () => {
-        if (!tanggal.value) tanggal.value = tanggalAwal;   // kosong -> kembali ke hari ini
-        render();
-    });
-    reset.addEventListener('click', () => {
-        qInput.value = '';
-        jabatan.value = '';
-        tanggal.value = tanggalAwal;
-        render();
-    });
-
-    render();
-})();
-
 // ===== Halaman Izin / Cuti (manager/izin_cuti/index.php) =====
 (function () {
     'use strict';
