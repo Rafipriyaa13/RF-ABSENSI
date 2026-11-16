@@ -1728,3 +1728,185 @@ body.nav-collapsed .main {
     }
 }
 
+/* ---------- Jadwal kerja pegawai ---------- */
+.jw-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0 20px 20px
+}
+
+.jw-day {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 128px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff
+}
+
+.jw-day b {
+    font-size: 13px
+}
+
+.jw-day .tgl {
+    font-size: 11.5px;
+    color: var(--muted)
+}
+
+.jw-day .tgl em {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--red)
+}
+
+.jw-day .shift {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700
+}
+
+.jw-day .waktu {
+    font-size: 11.5px;
+    color: var(--muted)
+}
+
+.jw-day .tag {
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #e5e7eb;
+    font-size: 10.5px;
+    color: var(--muted)
+}
+
+.jw-day.off {
+    background: var(--head)
+}
+
+.jw-day.off .shift {
+    color: #9ca3af
+}
+
+.jw-day.today {
+    border-color: var(--red);
+    box-shadow: 0 0 0 1px var(--red)
+}
+
+@media (max-width:1100px) {
+    .jw-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr))
+    }
+}
+
+@media (max-width:640px) {
+    .jw-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+    }
+}
+
+/* ---------- Profil pegawai & form pengajuan ---------- */
+.pf-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start
+}
+
+.pf-id {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px
+}
+
+.pf-id b {
+    display: block;
+    font-size: 15px
+}
+
+.pf-id small {
+    color: var(--muted);
+    font-size: 12px
+}
+
+.pf-avatar {
+    width: 56px;
+    height: 56px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--head);
+    color: var(--muted)
+}
+
+.pf-form {
+    display: grid;
+    gap: 14px
+}
+
+.pf-range {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px
+}
+
+.pf-range span {
+    font-size: 12px;
+    color: var(--muted)
+}
+
+.field textarea {
+    width: 100%;
+    min-height: 96px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    resize: vertical
+}
+
+.field textarea::placeholder {
+    color: #9ca3af
+}
+
+.field textarea:hover {
+    border-color: #9ca3af
+}
+
+.field textarea:focus {
+    outline: 0;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(232, 24, 44, .16)
+}
+
+.pf-submit {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px
+}
+
+@media (max-width:900px) {
+    .pf-grid {
+        grid-template-columns: 1fr
+    }
+}
+
+@media (max-width:480px) {
+    .pf-range {
+        grid-template-columns: 1fr
+    }
+
+    .pf-range span {
+        display: none
+    }
+}
