@@ -28,3 +28,12 @@ function tgl_indo($tanggal) {
     [$tahun, $bln, $tgl] = $parts;
     return (int)$tgl . ' ' . ($bulan[(int)$bln] ?? '') . ' ' . $tahun;
 }
+
+function jendela_shift($tanggal, $jamMulai, $jamSelesai) {
+    $mulai   = new DateTimeImmutable(substr($tanggal, 0, 10) . " " . substr($jamMulai, 0, 8));
+    $selesai = new DateTimeImmutable(substr($tanggal, 0, 10) . " " . substr($jamSelesai, 0, 8));
+    if ($selesai <= $mulai) {
+        $selesai = $selesai->modify("+1 day");
+    }
+    return [$mulai, $selesai];
+}
