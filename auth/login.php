@@ -105,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="login-btn" id="loginBtn">Masuk</button>
         </form>
 
+        <p class="login-foot">Belum punya password? <a href="/auth/register.php">Daftar di sini</a></p>
         <p class="login-foot">Lupa password? Hubungi admin pusat.</p>
     </main>
 

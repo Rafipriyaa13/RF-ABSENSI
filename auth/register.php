@@ -1,6 +1,5 @@
 <?php
-// auth/register.php
-// Akun dibuat manager (tanpa password). Di sini pegawai mengisi password miliknya sendiri.
+require_once __DIR__ . '/../includes/Functions.php';   
 require_once __DIR__ . '/../includes/Auth.php';
 require_once __DIR__ . '/../config/database.php';
 
@@ -57,50 +56,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Registrasi - Richeese Factory</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
-    <link rel="stylesheet" href="/assets/css/form.css">
-    <link rel="stylesheet" href="/assets/css/auth.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrasi — Richeese Factory</title>
+    <link rel="stylesheet" href="/assets/css/style.css?v=<?= time(); ?>">
 </head>
-<body>
-<div class="auth-wrap">
-    <div class="card auth-card">
-        <div class="logo">Richeese<small>Factory</small></div>
-        <div>
-            <h1>Registrasi akun</h1>
-            <p>Gunakan email yang didaftarkan manager outlet, lalu buat passwordmu sendiri.</p>
-        </div>
+
+<body class="login-page">
+    <main class="card login-card">
+        <div class="login-logo"><img src="/assets/foto/image.png" alt="Richeese Factory"></div>
+
+        <h1>Registrasi</h1>
+        <p class="login-sub">Gunakan email yang didaftarkan manager, lalu buat passwordmu sendiri.</p>
 
         <?php if ($errors): ?>
-            <div class="alert alert-error">
+            <div class="alert alert-error" role="alert">
                 <?php foreach ($errors as $err): ?><div><?= e($err) ?></div><?php endforeach; ?>
             </div>
         <?php endif; ?>
 
-        <form method="POST" class="fsec-body" autocomplete="on">
+        <form method="post" action="" class="login-form" id="regForm" autocomplete="on">
             <div class="field">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="<?= e($email) ?>" required autofocus>
+                <input type="email" id="email" name="email" placeholder="nama@richeese.co.id" value="<?= e($email) ?>" autocomplete="username" required autofocus>
             </div>
+
             <div class="field">
                 <label for="password">Buat password</label>
-                <input type="password" id="password" name="password" minlength="8" required autocomplete="new-password">
-                <span class="hint">Minimal 8 karakter.</span>
+                <div class="pw">
+                    <input type="password" id="password" name="password" placeholder="Minimal 8 karakter" minlength="8" autocomplete="new-password" required>
+                    <button type="button" class="pw-toggle" data-pw-toggle="password" aria-label="Tampilkan password" aria-pressed="false">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                            <circle cx="12" cy="12" r="3" />
+                            <path class="slash" d="M3 3l18 18" />
+                        </svg>
+                    </button>
+                </div>
+                <span class="field-hint" id="hintPanjang">Minimal 8 karakter.</span>
+                <span class="caps" id="caps" hidden>Caps Lock aktif</span>
             </div>
+
             <div class="field">
                 <label for="konfirmasi">Konfirmasi password</label>
-                <input type="password" id="konfirmasi" name="konfirmasi" minlength="8" required autocomplete="new-password">
+                <div class="pw">
+                    <input type="password" id="konfirmasi" name="konfirmasi" placeholder="Ulangi password" minlength="8" autocomplete="new-password" required>
+                    <button type="button" class="pw-toggle" data-pw-toggle="konfirmasi" aria-label="Tampilkan password" aria-pressed="false">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                            <circle cx="12" cy="12" r="3" />
+                            <path class="slash" d="M3 3l18 18" />
+                        </svg>
+                    </button>
+                </div>
+                <span class="field-hint" id="hintCocok" hidden></span>
             </div>
-            <button type="submit" class="btn">Daftar</button>
+
+            <button type="submit" class="login-btn" id="regBtn">Daftar</button>
         </form>
 
-        <div class="auth-links">
-            <a href="login.php">Sudah punya akun? Masuk</a>
-        </div>
-    </div>
-</div>
+        <p class="login-foot">Sudah punya akun? <a href="/auth/login.php">Masuk</a></p>
+    </main>
+
+    <script>
+        (function() {
+            var form = document.getElementById('regForm');
+            var pw = document.getElementById('password');
+            var kf = document.getElementById('konfirmasi');
+            var caps = document.getElementById('caps');
+            var btn = document.getElementById('regBtn');
+            var hintPanjang = document.getElementById('hintPanjang');
+            var hintCocok = document.getElementById('hintCocok');
+
+            // Tombol tampilkan / sembunyikan password (untuk kedua kolom)
+            [].forEach.call(document.querySelectorAll('[data-pw-toggle]'), function(t) {
+                t.addEventListener('click', function() {
+                    var input = document.getElementById(t.dataset.pwToggle);
+                    var tampil = input.type === 'password';
+                    input.type = tampil ? 'text' : 'password';
+                    t.setAttribute('aria-pressed', tampil ? 'true' : 'false');
+                    t.setAttribute('aria-label', tampil ? 'Sembunyikan password' : 'Tampilkan password');
+                    input.focus();
+                });
+            });
+
+            // Peringatan Caps Lock
+            function cekCaps(e) {
+                if (e.getModifierState) caps.hidden = !e.getModifierState('CapsLock');
+            }
+            [pw, kf].forEach(function(el) {
+                el.addEventListener('keydown', cekCaps);
+                el.addEventListener('keyup', cekCaps);
+                el.addEventListener('blur', function() { caps.hidden = true; });
+            });
+
+            // Petunjuk langsung: panjang password & kecocokan konfirmasi
+            function periksa() {
+                var cukup = pw.value.length >= 8;
+                hintPanjang.classList.toggle('ok', cukup);
+
+                if (kf.value === '') {
+                    hintCocok.hidden = true;
+                    return;
+                }
+                var cocok = kf.value === pw.value;
+                hintCocok.hidden = false;
+                hintCocok.textContent = cocok ? 'Password cocok.' : 'Password belum cocok.';
+                hintCocok.classList.toggle('ok', cocok);
+                hintCocok.classList.toggle('bad', !cocok);
+            }
+            pw.addEventListener('input', periksa);
+            kf.addEventListener('input', periksa);
+
+            form.addEventListener('submit', function() {
+                btn.disabled = true;
+                btn.textContent = 'Memproses...';
+            });
+            window.addEventListener('pageshow', function() {
+                btn.disabled = false;
+                btn.textContent = 'Daftar';
+            });
+        })();
+    </script>
 </body>
+
 </html>
