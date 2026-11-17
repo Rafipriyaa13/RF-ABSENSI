@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'simpan'
 
     // 4) Simpan dalam satu transaksi
     if (!$errors) {
-        $idManager = 5; // MANAGER SEMENTARA   
+        $idManager = (int)($_SESSION['user_id'] ?? 0 ) ;
         try {
             $pdo->beginTransaction();
 
@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'simpan'
         } catch (PDOException $ex) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             error_log('simpan jadwal gagal [' . $ex->getCode() . ']: ' . $ex->getMessage());
-            $errors[] = 'Terjadi kesalahan saat menyimpan jadwal.';
+            $errors[] = $ex;
         }
     }
 }
