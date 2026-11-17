@@ -1,5 +1,4 @@
 <?php
-// Bagian backend AWAL =======================
 require_once __DIR__ . '/../includes/Functions.php';
 require_once __DIR__ . '/../config/database.php';
 // require_once __DIR__ . '/../includes/Auth.php';
