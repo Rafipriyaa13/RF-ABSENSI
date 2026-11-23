@@ -19,6 +19,7 @@
     }
 
     function closeSidebar() {
+        if (!sidebar || !overlay || !menuToggle) return;   // halaman tanpa sidebar (login, register)
         sidebar.classList.remove('open');
         overlay.classList.remove('show');
         menuToggle.setAttribute('aria-expanded', 'false');
@@ -251,4 +252,50 @@
     dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
 
     render();
+})();
+
+// ===== Halaman Login & Registrasi (auth/login.php, auth/register.php) =====
+(function () {
+    'use strict';
+
+    const form = document.querySelector('.login-form');
+    if (!form) return;                       // bukan halaman login/registrasi
+
+    const btn   = form.querySelector('.login-btn');
+    const label = btn ? btn.textContent : '';
+
+    // Tiap kolom password punya tombol tampil/sembunyi dan peringatan Caps Lock sendiri
+    form.querySelectorAll('.field').forEach((field) => {
+        const input  = field.querySelector('input[type="password"]');
+        const toggle = field.querySelector('.pw-toggle');
+        const caps   = field.querySelector('.caps');
+        if (!input) return;
+
+        toggle?.addEventListener('click', () => {
+            const tampil = input.type === 'password';
+            input.type = tampil ? 'text' : 'password';
+            toggle.setAttribute('aria-pressed', tampil ? 'true' : 'false');
+            toggle.setAttribute('aria-label', tampil ? 'Sembunyikan password' : 'Tampilkan password');
+            input.focus();
+        });
+
+        if (caps) {
+            const cekCaps = (e) => { if (e.getModifierState) caps.hidden = !e.getModifierState('CapsLock'); };
+            input.addEventListener('keydown', cekCaps);
+            input.addEventListener('keyup', cekCaps);
+            input.addEventListener('blur', () => { caps.hidden = true; });
+        }
+    });
+
+    // Cegah klik ganda saat form dikirim
+    form.addEventListener('submit', () => {
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = 'Memproses...';
+    });
+    window.addEventListener('pageshow', () => {   // tombol Back di browser
+        if (!btn) return;
+        btn.disabled = false;
+        btn.textContent = label;
+    });
 })();

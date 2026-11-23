@@ -71,6 +71,13 @@ CREATE TABLE absensi (
     bukti_foto       VARCHAR(255),UNIQUE (jadwal_id),             
     CHECK (check_out IS NULL OR check_out >= check_in)
 );
+CREATE TABLE password_resets (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(100) NOT NULL,
+    token VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE INDEX idx_jadwal_tanggal   ON jadwal (tanggal);
 CREATE INDEX idx_jadwal_user      ON jadwal (user_id, tanggal);

@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
 
         <p class="login-foot">Belum punya password? <a href="/auth/register.php">Daftar di sini</a></p>
-        <p class="login-foot">Lupa password? Hubungi admin pusat.</p>
+<p class="login-foot">Lupa password? <a href="/auth/lupa_password.php" style="font-weight:600;text-decoration:underline;">Reset di sini</a></p>
     </main>
 
     <script>
