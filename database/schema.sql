@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS izin_cuti CASCADE;
 DROP TABLE IF EXISTS jadwal    CASCADE;
 DROP TABLE IF EXISTS shift     CASCADE;
 DROP TABLE IF EXISTS users     CASCADE;
+DROP TABLE IF EXISTS password_resets CASCADE;
 
 -- 1. USERS
 CREATE TABLE users (
@@ -18,6 +19,7 @@ CREATE TABLE users (
     jabatan         VARCHAR(50),                     -- Store Manager, Cashier, Kitchen Staff
     kontrak_mulai   DATE,
     kontrak_selesai DATE,
+    foto_profil     VARCHAR(255),
     rfid_uid        VARCHAR(30) UNIQUE,              -- NULL = kartu belum didaftarkan
     status          VARCHAR(10)  NOT NULL DEFAULT 'aktif'
                     CHECK (status IN ('aktif', 'nonaktif')),
@@ -54,9 +56,14 @@ CREATE TABLE izin_cuti (
     jenis           VARCHAR(10) NOT NULL CHECK (jenis IN ('izin', 'sakit', 'cuti')),
     tanggal_mulai   DATE NOT NULL,
     tanggal_selesai DATE NOT NULL,
+    alasan           TEXT NOT NULL,
+    lampiran         VARCHAR(255),
     status_approval VARCHAR(10) NOT NULL DEFAULT 'menunggu'
                     CHECK (status_approval IN ('menunggu', 'disetujui', 'ditolak')),
-    CHECK (tanggal_selesai >= tanggal_mulai)
+    alasan_penolakan TEXT,
+    CHECK (tanggal_selesai >= tanggal_mulai),
+    CONSTRAINT chk_alasan_tolak
+        CHECK (status_approval <> 'ditolak' OR alasan_penolakan IS NOT NULL)
 );
 
 -- 5. ABSENSI
@@ -68,9 +75,10 @@ CREATE TABLE absensi (
     check_out        TIMESTAMP,
     status_kehadiran VARCHAR(15) NOT NULL
                      CHECK (status_kehadiran IN ('tepat_waktu', 'terlambat')),
-    bukti_foto       VARCHAR(255),UNIQUE (jadwal_id),             
+    UNIQUE (jadwal_id),            
     CHECK (check_out IS NULL OR check_out >= check_in)
 );
+
 CREATE TABLE password_resets (
     id SERIAL PRIMARY KEY,
     email VARCHAR(100) NOT NULL,
