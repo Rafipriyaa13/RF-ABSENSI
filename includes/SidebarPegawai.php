@@ -19,9 +19,12 @@ $namaLogin = $namaLogin ?? ($_SESSION['nama'] ?? 'Pegawai');
         <?php endforeach; ?>
     </nav>
     <div class="me">
-        <div class="avatar"></div>
+        <!-- Klik foto / nama untuk membuka halaman profil -->
+        <a href="/pegawai/profil.php" class="me-avatar" aria-label="Buka profil saya" tabindex="-1">
+            <span class="avatar"></span>
+        </a>
         <div>
-            <b><?= e($namaLogin) ?></b>
+            <a href="/pegawai/profil.php" class="me-name" title="Buka profil saya"><b><?= e($namaLogin) ?></b></a>
             <a href="/auth/logout.php">Keluar</a>
         </div>
     </div>

@@ -264,7 +264,7 @@ include __DIR__ . '/../includes/Header.php';
         <article class="card dcard">
             <div class="pj-head">
                 <h2>Status Pengajuan Izin / Cuti</h2>
-                <a class="pj-ajukan" href="/pegawai/profil.php">Ajukan</a>
+                <a class="pj-ajukan" href="/pegawai/izin_cuti/ajukan.php">Ajukan</a>
             </div>
 
             <div class="pj-list">
