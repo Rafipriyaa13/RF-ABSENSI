@@ -192,26 +192,17 @@ $activeMenu   = 'dashboard';
 $sidebarRole  = 'pegawai';
 $topDate      = 'Hari ini: ' . $hariIni->format('j') . ' ' . $BULAN[(int)$hariIni->format('n')] . ' ' . $hariIni->format('Y');
 $namaLogin    = $pegawai['nama'];
+
+$st = $pdo->prepare("
+SELECT i.jenis, i.tanggal_mulai as mulai, i.tanggal_selesai as selesai, i.status_approval as status, i.alasan, i.alasan_penolakan as catatan
+FROM izin_cuti i
+WHERE i.user_id = ?
+");
+$st->execute([$idPegawai]);
+$pengajuan = $st->fetchAll() ?: null;
+
 // Bagian backend AKHIR ======================
 //============================================
-
-// DATA CONTOH untuk tampilan. Backend nanti mengisi array ini dari tabel izin_cuti.
-// status   : 'menunggu' | 'disetujui' | 'ditolak'
-// lampiran : nama file surat (atau null)
-// catatan  : alasan penolakan / catatan manager (atau null)
-$pengajuan = [
-    ['jenis' => 'Cuti Tahunan', 'mulai' => '2026-11-25', 'selesai' => '2026-11-27', 'status' => 'menunggu',
-     'alasan' => 'Acara keluarga di luar kota.', 'lampiran' => null, 'catatan' => null],
-    ['jenis' => 'Sakit', 'mulai' => '2026-11-15', 'selesai' => '2026-11-15', 'status' => 'ditolak',
-     'alasan' => 'Demam dan sakit kepala.', 'lampiran' => 'surat_dokter.pdf',
-     'catatan' => 'Surat dokter tidak terbaca jelas, mohon unggah ulang.'],
-    ['jenis' => 'Izin', 'mulai' => '2026-11-10', 'selesai' => '2026-11-10', 'status' => 'disetujui',
-     'alasan' => 'Mengurus perpanjangan KTP.', 'lampiran' => 'surat_izin.jpg',
-     'catatan' => 'Disetujui. Jangan lupa koordinasi dengan rekan shift.'],
-    ['jenis' => 'Cuti Tahunan', 'mulai' => '2026-11-03', 'selesai' => '2026-11-05', 'status' => 'ditolak',
-     'alasan' => 'Liburan keluarga.', 'lampiran' => null,
-     'catatan' => 'Jadwal outlet sedang penuh pada tanggal tersebut.'],
-];
 
 // Ikon kecil (isi tag <svg>)
 $ikon = [
@@ -286,12 +277,13 @@ include __DIR__ . '/../includes/Header.php';
                         <p class="pj-row"><?= $svg('cal') ?><span><?= e($periode) ?> (<?= $durasi ?> hari)</span></p>
                         <p class="pj-row"><?= $svg('note') ?><span>Alasan: <?= e($p['alasan']) ?></span></p>
 
-                        <?php if ($p['lampiran']): ?>
+                         <!-- lampiran masih belum terimplementasi -->
+                        <!-- <?php if ($p['lampiran']): ?>
                             <?php /* TODO backend: ganti href dengan path file asli, mis. /uploads/izin_cuti/<nama file> */ ?>
                             <p class="pj-row"><?= $svg('clip') ?>
                                 <a href="#" target="_blank" rel="noopener">Lihat Lampiran (<?= e($p['lampiran']) ?>)</a>
                             </p>
-                        <?php endif; ?>
+                        <?php endif; ?> -->
 
                         <?php if ($p['catatan']): ?>
                             <div class="pj-note pj-note-<?= e($p['status']) ?>">
