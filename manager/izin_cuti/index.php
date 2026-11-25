@@ -2,6 +2,8 @@
 // manager/izin_cuti/index.php
 require_once __DIR__ . '/../../includes/Functions.php';
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/Auth.php';
+cek_role('manager');   // aktifkan setelah login selesai
 
 $pageTitle = 'Izin / Cuti';
 $pageSubtitle = 'Tinjau dan setujui pengajuan izin & cuti pegawai';
@@ -34,16 +36,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $approver_id = $_SESSION['user_id'] ?? 5; // Sesuaikan dengan session manager aktif
         try {
-            // TODO: Tambahkan kolom alasan_penolakan ke query UPDATE setelah struktur DB diperbarui
             $stmt = $pdo->prepare("
                 UPDATE izin_cuti 
                 SET status_approval = :status, 
-                    approved_by = :approver
+                    approved_by = :approver,
+                    alasan_penolakan = :alasan
                 WHERE id = :id AND status_approval = 'menunggu'
             ");
             $stmt->execute([
                 ':status' => $status,
                 ':approver' => $approver_id,
+                ':alasan' => $alasan,
                 ':id' => $izin_id
             ]);
 
@@ -79,6 +82,7 @@ $sql = "
         u.nama,
         u.jabatan,
         i.jenis,
+        i.alasan,
         TO_CHAR(i.tanggal_mulai, 'YYYY-MM-DD') AS mulai,
         TO_CHAR(i.tanggal_selesai, 'YYYY-MM-DD') AS selesai,
         i.status_approval AS status
@@ -178,6 +182,7 @@ include __DIR__ . '/../../includes/Header.php';
                     <th>Pegawai</th>
                     <th>Jenis</th>
                     <th>Periode</th>
+                    <th>Alasan</th>
                     <th>Durasi</th>
                     <th style="width: 140px;">Dokumen</th>
                     <th style="width: 130px;">Status</th>
@@ -204,6 +209,7 @@ include __DIR__ . '/../../includes/Header.php';
                                     <?= date('d M', strtotime($row['mulai'])) ?> - <?= date('d M Y', strtotime($row['selesai'])) ?>
                                 <?php endif; ?>
                             </td>
+                            <td data-label="Alasan"><?= e($row['alasan']) ?></td>
                             <td data-label="Durasi"><?= $durasi ?> hari</td>
 
                             <!-- Kolom Dokumen (Placeholder) -->
