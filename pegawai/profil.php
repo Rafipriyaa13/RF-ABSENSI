@@ -7,13 +7,6 @@ require_once __DIR__ . '/../config/database.php';
 
 date_default_timezone_set('Asia/Jakarta');
 
-/* =====================================================================
- * DATA YANG DIPAKAI HALAMAN
- *  $pegawai  data akun dari tabel users
- *  $old      isian form pengajuan sebelumnya (jika validasi gagal)
- *  Form pengajuan dikirim ke pegawai/izin_cuti/simpan.php
- * ===================================================================== */
-
 // PEGAWAI SEMENTARA: ganti dengan $_SESSION['user_id'] setelah login selesai
 $idPegawai = (int)($_SESSION['user_id'] ?? 1);
 
@@ -27,35 +20,24 @@ $pegawai = $st->fetch() ?: [
     'jabatan' => null, 'kontrak_mulai' => null, 'kontrak_selesai' => null,
 ];
 
-$flash = get_flash();
-$old   = $_SESSION['old_izin'] ?? null;
-unset($_SESSION['old_izin']);
-
-$hariIni   = new DateTimeImmutable('today');
-$tglHariIni = $hariIni->format('Y-m-d');
-$BULAN     = [1 => 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-
-$jenisOpsi = ['izin' => 'Izin', 'sakit' => 'Sakit', 'cuti' => 'Cuti'];
-$jenisPilih = $old['jenis'] ?? 'izin';
-$mulaiIsi   = $old['tanggal_mulai'] ?? $tglHariIni;
-$selesaiIsi = $old['tanggal_selesai'] ?? $tglHariIni;
-$alasanIsi  = $old['alasan'] ?? '';
+$flash   = get_flash();
+$hariIni = new DateTimeImmutable('today');
+$BULAN   = [1 => 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
 $baris = [
-    'Jabatan'       => $pegawai['jabatan'] ?: '-',
-    'Email Kerja'   => $pegawai['email'] ?: '-',
-    'Kontrak Mulai' => tgl_indo($pegawai['kontrak_mulai']) ?: '-',
+    'Jabatan'         => $pegawai['jabatan'] ?: '-',
+    'Email Kerja'     => $pegawai['email'] ?: '-',
+    'Kontrak Mulai'   => tgl_indo($pegawai['kontrak_mulai']) ?: '-',
     'Kontrak Selesai' => tgl_indo($pegawai['kontrak_selesai']) ?: '-',
 ];
 
 $pageTitle    = 'Profil Saya';
-$pageSubtitle = 'Informasi akun dan pengajuan izin karyawan';
+$pageSubtitle = 'Informasi akun dan data pribadi karyawan';
 $activeMenu   = 'profil';
 $sidebarRole  = 'pegawai';
 $topDate      = 'Hari ini: ' . $hariIni->format('j') . ' ' . $BULAN[(int)$hariIni->format('n')] . ' ' . $hariIni->format('Y');
 $namaLogin    = $pegawai['nama'];
 // Bagian backend AKHIR ======================
-//============================================
 
 // Bagian halaman frontend ==================================
 include __DIR__ . '/../includes/Header.php';
@@ -84,49 +66,6 @@ include __DIR__ . '/../includes/Header.php';
             <?php endforeach; ?>
         </ul>
     </article>
-
-    <!-- Formulir pengajuan izin / cuti -->
-    <article class="card dcard">
-        <h2>Formulir Pengajuan Izin / Cuti</h2>
-        <form method="post" action="/pegawai/izin_cuti/simpan.php" class="pf-form">
-            <div class="field">
-                <label for="jenis">Tipe Pengajuan</label>
-                <select id="jenis" name="jenis" required>
-                    <?php foreach ($jenisOpsi as $nilai => $label): ?>
-                        <option value="<?= e($nilai) ?>" <?= $jenisPilih === $nilai ? 'selected' : '' ?>><?= e($label) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="field">
-                <label for="tanggal_mulai">Tanggal Mulai s/d Selesai</label>
-                <div class="pf-range">
-                    <input type="date" id="tanggal_mulai" name="tanggal_mulai" value="<?= e($mulaiIsi) ?>" required>
-                    <span>s/d</span>
-                    <input type="date" id="tanggal_selesai" name="tanggal_selesai" value="<?= e($selesaiIsi) ?>" min="<?= e($mulaiIsi) ?>" required>
-                </div>
-            </div>
-
-            <div class="field">
-                <label for="alasan">Alasan Detail</label>
-                <textarea id="alasan" name="alasan" rows="4" maxlength="500" required placeholder="Masukkan keterangan medis atau keperluan mendesak..."><?= e($alasanIsi) ?></textarea>
-            </div>
-
-            <button type="submit" class="btn pf-submit">Ajukan Permohonan</button>
-        </form>
-    </article>
 </section>
-
-<script>
-(function () {
-    var mulai = document.getElementById('tanggal_mulai');
-    var selesai = document.getElementById('tanggal_selesai');
-    // Tanggal selesai tidak boleh lebih awal dari tanggal mulai
-    mulai.addEventListener('change', function () {
-        selesai.min = mulai.value;
-        if (selesai.value < mulai.value) selesai.value = mulai.value;
-    });
-})();
-</script>
 
 <?php include __DIR__ . '/../includes/Footer.php'; ?>

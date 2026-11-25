@@ -1984,3 +1984,43 @@ body.nav-collapsed .main {
 .pj-note-disetujui { background: #f0fdf4; border-color: #bbf7d0; color: #166534 }
 
 .pj-empty { margin: 4px 0 0; font-size: 14px; color: var(--muted) }
+
+/* ---------- Unggah surat / dokumen (pegawai/profil.php) ---------- */
+.up-tag { margin-left: 6px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #fee2e2; color: #991b1b }
+.up-tag[hidden] { display: none }
+.up-tag-opt { background: var(--head); color: var(--muted) }
+
+.up-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 20px 14px;
+    text-align: center;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    background: #fafafa;
+    font-size: 13.5px;
+    color: #4b5563;
+    cursor: pointer;
+    transition: border-color .15s, background .15s
+}
+
+.up-drop svg { width: 26px; height: 26px; color: var(--red) }
+.up-drop b { color: var(--red) }
+.up-drop small { font-size: 12px; color: var(--muted) }
+.up-drop:hover, .up-drop.over { border-color: var(--red); background: #fff1f2 }
+.up-drop:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
+
+.up-file { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff }
+.up-file[hidden] { display: none }
+.up-file img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line) }
+.up-pdf { flex: 0 0 48px; height: 48px; display: grid; place-items: center; border-radius: 8px; background: #fee2e2; color: #b91c1c; font-size: 12px; font-weight: 800 }
+.up-info { flex: 1; min-width: 0 }
+.up-info b { display: block; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.up-info small { font-size: 12px; color: var(--muted) }
+.up-remove { width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--head); font-size: 19px; line-height: 1; color: var(--muted); cursor: pointer }
+.up-remove:hover { background: #fee2e2; color: #b91c1c }
+
+.up-error { margin: 8px 0 0; font-size: 12.5px; font-weight: 600; color: #b91c1c }
+.up-error[hidden] { display: none }

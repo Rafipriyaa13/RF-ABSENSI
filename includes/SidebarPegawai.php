@@ -3,7 +3,7 @@ $menu = [
     'dashboard' => ['Dashboard',       '/pegawai/dashboard.php'],
     'absensi'   => ['Absensi Pegawai', '/pegawai/absensi.php'],
     'jadwal'    => ['Jadwal Shift',    '/pegawai/jadwal.php'],
-    'profil'    => ['Profil',          '/pegawai/profil.php'],
+    'ajukan'    => ['Izin Cuti',          '/pegawai/izin_cuti/ajukan.php'],
 ];
 // $namaLogin bisa diisi oleh halaman; jika tidak, ambil dari session.
 $namaLogin = $namaLogin ?? ($_SESSION['nama'] ?? 'Pegawai');
