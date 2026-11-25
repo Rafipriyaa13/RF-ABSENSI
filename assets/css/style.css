@@ -1914,3 +1914,73 @@ body.nav-collapsed .main {
 .field-hint.bad { color: #b91c1c }
 .login-foot a { color: var(--red); font-weight: 600 }
 .login-foot a:hover { text-decoration: underline }
+
+/* ---------- Status pengajuan izin/cuti (pegawai/dashboard.php) ---------- */
+/* Kolom kiri dashboard pegawai: Akumulasi + Status pengajuan */
+.dcol { display: flex; flex-direction: column; gap: inherit; min-width: 0 }
+.dcol .pj-list { max-height: 260px; overflow-y: auto; padding-right: 4px }
+
+/* Kartu jadwal mengikuti tinggi kolom kiri, barisnya dibagi rata */
+.dcard-fill { align-self: stretch; display: flex; flex-direction: column }
+.dcard-fill .week-list { flex: 1; grid-auto-rows: 1fr }
+
+@media (max-width:900px) {
+    .dcol .pj-list { max-height: none; overflow: visible; padding-right: 0 }
+}
+
+.pj-head { display: flex; justify-content: space-between; align-items: center; gap: 12px }
+.pj-head h2 { margin: 0 }
+
+.pj-ajukan {
+    height: 36px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 10px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600
+}
+
+.pj-ajukan:hover { background: #000 }
+
+.pj-list { display: flex; flex-direction: column; gap: 14px; margin-top: 16px }
+
+.pj-item { padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: #fff }
+
+.pj-top { display: flex; justify-content: space-between; align-items: center; gap: 10px }
+.pj-top b { font-size: 15px }
+
+.pj-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .04em
+}
+
+.pj-badge::before { content: ""; width: 9px; height: 9px; border-radius: 50% }
+.pj-menunggu  { background: #fef9c3; color: #854d0e }
+.pj-menunggu::before  { background: #facc15 }
+.pj-disetujui { background: #dcfce7; color: #166534 }
+.pj-disetujui::before { background: #22c55e }
+.pj-ditolak   { background: #fee2e2; color: #991b1b }
+.pj-ditolak::before   { background: #ef4444 }
+
+.pj-row { display: flex; align-items: flex-start; gap: 10px; margin: 10px 0 0; font-size: 14px; color: #374151; line-height: 1.5 }
+.pj-ico { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 2px; color: var(--muted) }
+.pj-row a { color: var(--red); font-weight: 600 }
+.pj-row a:hover { text-decoration: underline }
+
+.pj-note { display: flex; gap: 10px; margin-top: 12px; padding: 12px 14px; border: 1px solid; border-radius: 10px }
+.pj-note .pj-ico { margin-top: 1px; color: inherit }
+.pj-note b { display: block; font-size: 13px }
+.pj-note p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.5 }
+.pj-note-ditolak   { background: #fef2f2; border-color: #fecaca; color: #991b1b }
+.pj-note-disetujui { background: #f0fdf4; border-color: #bbf7d0; color: #166534 }
+
+.pj-empty { margin: 4px 0 0; font-size: 14px; color: var(--muted) }

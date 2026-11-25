@@ -195,7 +195,34 @@ $namaLogin    = $pegawai['nama'];
 // Bagian backend AKHIR ======================
 //============================================
 
-// Bagian halaman frontend ==================================
+// DATA CONTOH untuk tampilan. Backend nanti mengisi array ini dari tabel izin_cuti.
+// status   : 'menunggu' | 'disetujui' | 'ditolak'
+// lampiran : nama file surat (atau null)
+// catatan  : alasan penolakan / catatan manager (atau null)
+$pengajuan = [
+    ['jenis' => 'Cuti Tahunan', 'mulai' => '2026-11-25', 'selesai' => '2026-11-27', 'status' => 'menunggu',
+     'alasan' => 'Acara keluarga di luar kota.', 'lampiran' => null, 'catatan' => null],
+    ['jenis' => 'Sakit', 'mulai' => '2026-11-15', 'selesai' => '2026-11-15', 'status' => 'ditolak',
+     'alasan' => 'Demam dan sakit kepala.', 'lampiran' => 'surat_dokter.pdf',
+     'catatan' => 'Surat dokter tidak terbaca jelas, mohon unggah ulang.'],
+    ['jenis' => 'Izin', 'mulai' => '2026-11-10', 'selesai' => '2026-11-10', 'status' => 'disetujui',
+     'alasan' => 'Mengurus perpanjangan KTP.', 'lampiran' => 'surat_izin.jpg',
+     'catatan' => 'Disetujui. Jangan lupa koordinasi dengan rekan shift.'],
+    ['jenis' => 'Cuti Tahunan', 'mulai' => '2026-11-03', 'selesai' => '2026-11-05', 'status' => 'ditolak',
+     'alasan' => 'Liburan keluarga.', 'lampiran' => null,
+     'catatan' => 'Jadwal outlet sedang penuh pada tanggal tersebut.'],
+];
+
+// Ikon kecil (isi tag <svg>)
+$ikon = [
+    'cal'  => '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    'note' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+    'clip' => '<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+    'warn' => '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>',
+    'ok'   => '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>',
+];
+$svg = fn($k) => '<svg class="pj-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $ikon[$k] . '</svg>';
+
 include __DIR__ . '/../includes/Header.php';
 ?>
 
@@ -220,19 +247,73 @@ include __DIR__ . '/../includes/Header.php';
         <p class="sub"><?= e($statusNote) ?></p>
     </article>
 
-    <!-- Akumulasi bulan ini -->
-    <article class="card dcard">
-        <h2>Akumulasi Bulan Ini</h2>
-        <div class="acc-grid">
-            <div class="acc"><small>Hadir</small><b><?= $rekap['hadir'] ?> kali</b></div>
-            <div class="acc"><small>Terlambat</small><b><?= $rekap['terlambat'] ?> kali</b></div>
-            <div class="acc"><small>Izin / Sakit</small><b><?= $rekap['izin_sakit'] ?> kali</b></div>
-            <div class="acc"><small>Alpha</small><b><?= $rekap['alpha'] ?> kali</b></div>
-        </div>
-    </article>
+    <!-- Kolom kiri: Akumulasi + Status pengajuan -->
+    <div class="dcol">
+        <!-- Akumulasi bulan ini -->
+        <article class="card dcard">
+            <h2>Akumulasi Bulan Ini</h2>
+            <div class="acc-grid">
+                <div class="acc"><small>Hadir</small><b><?= $rekap['hadir'] ?> kali</b></div>
+                <div class="acc"><small>Terlambat</small><b><?= $rekap['terlambat'] ?> kali</b></div>
+                <div class="acc"><small>Izin / Sakit</small><b><?= $rekap['izin_sakit'] ?> kali</b></div>
+                <div class="acc"><small>Alpha</small><b><?= $rekap['alpha'] ?> kali</b></div>
+            </div>
+        </article>
+
+        <!-- Status pengajuan izin / cuti -->
+        <article class="card dcard">
+            <div class="pj-head">
+                <h2>Status Pengajuan Izin / Cuti</h2>
+                <a class="pj-ajukan" href="/pegawai/profil.php">Ajukan</a>
+            </div>
+
+            <div class="pj-list">
+                <?php foreach ($pengajuan as $p):
+                    $a = new DateTimeImmutable($p['mulai']);
+                    $b = new DateTimeImmutable($p['selesai']);
+                    $durasi = $a->diff($b)->days + 1;
+                    $fmt = fn($d) => $d->format('j') . ' ' . $BULAN[(int)$d->format('n')];
+                    $periode = $durasi > 1
+                        ? $fmt($a) . ' - ' . $fmt($b) . ' ' . $b->format('Y')
+                        : $fmt($a) . ' ' . $a->format('Y');
+                ?>
+                    <section class="pj-item">
+                        <div class="pj-top">
+                            <b><?= e($p['jenis']) ?></b>
+                            <span class="pj-badge pj-<?= e($p['status']) ?>"><?= e(strtoupper($p['status'])) ?></span>
+                        </div>
+
+                        <p class="pj-row"><?= $svg('cal') ?><span><?= e($periode) ?> (<?= $durasi ?> hari)</span></p>
+                        <p class="pj-row"><?= $svg('note') ?><span>Alasan: <?= e($p['alasan']) ?></span></p>
+
+                        <?php if ($p['lampiran']): ?>
+                            <?php /* TODO backend: ganti href dengan path file asli, mis. /uploads/izin_cuti/<nama file> */ ?>
+                            <p class="pj-row"><?= $svg('clip') ?>
+                                <a href="#" target="_blank" rel="noopener">Lihat Lampiran (<?= e($p['lampiran']) ?>)</a>
+                            </p>
+                        <?php endif; ?>
+
+                        <?php if ($p['catatan']): ?>
+                            <div class="pj-note pj-note-<?= e($p['status']) ?>">
+                                <?= $svg($p['status'] === 'ditolak' ? 'warn' : 'ok') ?>
+                                <div>
+                                    <b><?= $p['status'] === 'ditolak' ? 'Alasan Penolakan:' : 'Catatan Manager:' ?></b>
+                                    <p><?= e($p['catatan']) ?></p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </section>
+                <?php endforeach; ?>
+
+                <?php if (!$pengajuan): ?>
+                    <p class="pj-empty">Belum ada pengajuan izin atau cuti.</p>
+                <?php endif; ?>
+            </div>
+        </article>
+    </div>
 
     <!-- Jadwal shift mingguan -->
-    <article class="card dcard">
+    <article class="card dcard dcard-fill">
         <h2>Jadwal Shift Mingguan</h2>
         <ul class="week-list">
             <?php foreach ($mingguan as $h): ?>
